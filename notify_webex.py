@@ -110,26 +110,51 @@ def build_evening_message() -> str:
 
 
 def build_morning_message() -> str:
-    """Build the pre-market reminder with today's trade plan."""
-    msg = "## ☀️ Pre-Market Alert — Today's Trade Plan\n\n"
+    """Build the pre-market reminder with today's trade plan and global context."""
+    msg = "## ☀️ PRE-MARKET BRIEFING\n\n"
+    
+    # 1. Add Global Signals Context
+    import market_db
+    try:
+        conn = market_db.get_connection()
+        global_df = pd.read_sql("SELECT * FROM global_signals WHERE date = (SELECT MAX(date) FROM global_signals)", conn)
+        pred = market_db.get_latest_gap_prediction()
+        conn.close()
+        
+        if not global_df.empty and pred:
+            msg += "### 📊 GLOBAL OVERNIGHT SIGNALS\n"
+            msg += "| Market | Value | Change |\n"
+            msg += "|--------|-------|--------|\n"
+            for _, row in global_df.iterrows():
+                # Add simple trend emoji
+                trend = "🟢" if row['change_pct'] > 0 else "🔴"
+                if row['signal_name'] in ['Crude Oil', 'US 10Y Yield', 'Dollar Index']:
+                    trend = "🔴" if row['change_pct'] > 0 else "🟢" # Inverse for India
+                    
+                msg += f"| **{row['signal_name']}** | {row['value']:,.2f} | {trend} {row['change_pct']:+.2f}% |\n"
+                
+            msg += f"\n**🔮 GAP PREDICTION:** {pred['prediction_pct']:+.2f}% — _{pred['bias']}_\n\n"
+    except Exception as e:
+        print(f"Error loading global context: {e}")
 
+    # 2. Add Trade Plan
+    msg += "### 🎯 TODAY'S TRADE PLAN\n\n"
     if not os.path.exists("trade_plan.json"):
-        return msg + "⚠️ No trade plan found. Run the evening pipeline first."
+        msg += "⚠️ No trade plan found. Run the evening pipeline first."
+    else:
+        with open("trade_plan.json", "r") as f:
+            plan = json.load(f)
 
-    with open("trade_plan.json", "r") as f:
-        plan = json.load(f)
+        if not plan:
+            msg += "🔴 **No trades today.** Screener found zero 70+ setups yesterday."
+        else:
+            msg += "| Stock | Dhan Security ID |\n"
+            msg += "|-------|------------------|\n"
+            for symbol, sec_id in plan.items():
+                msg += f"| **{symbol}** | {sec_id} |\n"
 
-    if not plan:
-        return msg + "🔴 **No trades today.** Screener found zero 70+ setups yesterday."
-
-    msg += "### 🎯 Stocks to Watch\n\n"
-    msg += "| Stock | Dhan Security ID |\n"
-    msg += "|-------|------------------|\n"
-    for symbol, sec_id in plan.items():
-        msg += f"| **{symbol}** | {sec_id} |\n"
-
-    msg += "\n### ⏰ Key Times\n"
-    msg += "- **9:15–9:30**: ORB candle forming — DO NOT TRADE\n"
+    msg += "\n### ⏰ KEY TIMES\n"
+    msg += "- **9:15–9:30**: ORB forming — DO NOT TRADE\n"
     msg += "- **9:30–9:45**: 🟢 PRIMARY ENTRY WINDOW\n"
     msg += "- **10:30–11:30**: Start trailing stops\n"
     msg += "- **11:30+**: Exit zone — no new entries\n"

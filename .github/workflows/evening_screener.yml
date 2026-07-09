@@ -11,6 +11,9 @@ on:
     - cron: '15 10 * * 1-5'
   workflow_dispatch:  # Allow manual trigger
 
+permissions:
+  contents: write
+
 jobs:
   screener:
     runs-on: ubuntu-latest
@@ -38,11 +41,23 @@ jobs:
       - name: Generate Intraday Trade Plan
         run: python intraday_trigger.py
 
+      - name: Save to Database
+        run: |
+          python -c "import market_db; market_db.save_screener_results('screener_results.csv'); market_db.save_news_results('news_features.csv')"
+
       - name: Send Evening Webex Notification
         env:
           WEBEX_TOKEN: ${{ secrets.WEBEX_TOKEN }}
           WEBEX_ROOM_ID: ${{ secrets.WEBEX_ROOM_ID }}
         run: python notify_webex.py evening
+
+      - name: Commit Database changes
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add market_data.db || true
+          git commit -m "Auto-update market_data.db [skip ci]" || echo "No changes to commit"
+          git push
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
