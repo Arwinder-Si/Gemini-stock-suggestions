@@ -30,9 +30,9 @@ class Settings(BaseSettings):
     time_based_exit: str = Field(default="15:15", alias="TIME_BASED_EXIT")
     screener_top_n: int = Field(default=5, alias="SCREENER_TOP_N")
 
-    # Telegram
-    telegram_bot_token: str = Field(default="", alias="TELEGRAM_BOT_TOKEN")
-    telegram_chat_id: str = Field(default="", alias="TELEGRAM_CHAT_ID")
+    # Webex
+    webex_token: str = Field(default="", alias="WEBEX_TOKEN")
+    webex_room_id: str = Field(default="", alias="WEBEX_ROOM_ID")
 
     model_config = SettingsConfigDict(
         env_file=".env",

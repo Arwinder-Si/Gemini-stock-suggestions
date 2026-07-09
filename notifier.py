@@ -1,5 +1,5 @@
 """
-Telegram notifier — sends signal alerts via the Telegram Bot HTTP API.
+Webex notifier — sends live intraday signal alerts via the Webex Teams API.
 
 Uses a persistent httpx.Client for connection reuse.
 """
@@ -18,39 +18,43 @@ logger = logging.getLogger(__name__)
 _client = httpx.Client(timeout=10.0)
 
 
-def send_telegram_alert(signal: Signal, bot_token: str, chat_id: str) -> None:
+def send_webex_alert(signal: Signal, bot_token: str, room_id: str) -> None:
     """
-    Posts a formatted signal message to a Telegram chat.
+    Posts a formatted live trade signal to a Webex room.
 
     Does nothing if credentials are empty (useful for local testing).
     """
-    if not bot_token or not chat_id:
-        logger.debug("Skipping Telegram alert for %s: credentials missing.", signal.symbol)
+    if not bot_token or not room_id:
+        logger.debug("Skipping Webex alert for %s: credentials missing.", signal.symbol)
         return
 
-    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    url = "https://webexapis.com/v1/messages"
 
     text = (
-        f"🚨 *ORB {signal.direction} SIGNAL* 🚨\n"
-        f"*Symbol:* {signal.symbol}\n"
-        f"*Entry:* {signal.entry}\n"
-        f"*SL:* {signal.sl}\n"
-        f"*TP:* {signal.tp}\n"
-        f"*Reason:* {signal.reason}\n"
-        f"*Time:* {signal.timestamp}"
+        f"🚨 **ORB {signal.direction} SIGNAL** 🚨\n"
+        f"- **Symbol:** {signal.symbol}\n"
+        f"- **Entry:** {signal.entry}\n"
+        f"- **SL:** {signal.sl}\n"
+        f"- **TP:** {signal.tp}\n"
+        f"- **Reason:** {signal.reason}\n"
+        f"- **Time:** {signal.timestamp}"
     )
 
+    headers = {
+        "Authorization": f"Bearer {bot_token}",
+        "Content-Type": "application/json",
+    }
+
     payload = {
-        "chat_id": chat_id,
-        "text": text,
-        "parse_mode": "Markdown",
+        "roomId": room_id,
+        "markdown": text,
     }
 
     try:
-        response = _client.post(url, json=payload)
+        response = _client.post(url, headers=headers, json=payload)
         response.raise_for_status()
-        logger.info("Telegram alert sent for %s.", signal.symbol)
+        logger.info("Webex alert sent for %s.", signal.symbol)
     except httpx.HTTPStatusError as e:
-        logger.error("Telegram HTTP %s: %s", e.response.status_code, e.response.text)
+        logger.error("Webex HTTP %s: %s", e.response.status_code, e.response.text)
     except Exception:
-        logger.exception("Failed to send Telegram alert for %s", signal.symbol)
+        logger.exception("Failed to send Webex alert for %s", signal.symbol)

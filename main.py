@@ -24,7 +24,7 @@ import threading
 from config import get_config
 from logger import init_logger, log_signal
 from market_feed import MarketFeedProducer
-from notifier import send_telegram_alert
+from notifier import send_webex_alert
 from strategy import ORBBreakoutStrategy, ORBConfig
 
 # ── Logging setup ────────────────────────────────────────────────────
@@ -47,7 +47,7 @@ def strategy_worker(
     q: queue.Queue,
     stop_event: threading.Event,
     bot_token: str,
-    chat_id: str,
+    room_id: str,
 ) -> None:
     """Consumes candles from the queue and runs ORB strategy logic."""
 
@@ -77,7 +77,7 @@ def strategy_worker(
                     sig.entry, sig.sl, sig.tp,
                 )
                 log_signal(sig)
-                send_telegram_alert(sig, bot_token, chat_id)
+                send_webex_alert(sig, bot_token, room_id)
         except Exception:
             logger.exception("Error in strategy worker processing candle")
         finally:
@@ -117,7 +117,7 @@ def main() -> None:
 
     worker = threading.Thread(
         target=strategy_worker,
-        args=(strategy_queue, stop_event, cfg.telegram_bot_token, cfg.telegram_chat_id),
+        args=(strategy_queue, stop_event, cfg.webex_token, cfg.webex_room_id),
         daemon=True,
         name="orb-worker",
     )
