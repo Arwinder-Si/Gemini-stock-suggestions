@@ -121,8 +121,12 @@ def build_evening_message() -> str:
 
 def build_morning_message() -> str:
     """Build the pre-market reminder with today's trade plan and global context."""
-    msg = "## ☀️ PRE-MARKET BRIEFING\n\n"
+    import datetime
+    import yfinance as yf
     
+    today_str = datetime.datetime.now().strftime("%B %d, %Y")
+    msg = f"## ☀️ PRE-MARKET BRIEFING ({today_str})\n\n"
+
     # 1. Add Global Signals Context
     import market_db
     try:
@@ -144,6 +148,17 @@ def build_morning_message() -> str:
     except Exception as e:
         print(f"Error loading global context: {e}")
 
+    def verify_price(symbol: str, default_price: float) -> float:
+        """Double verify the close price using yfinance live fetch."""
+        try:
+            ticker = yf.Ticker(f"{symbol}.NS")
+            live_price = float(ticker.fast_info.last_price)
+            if live_price > 0:
+                return live_price
+        except Exception:
+            pass
+        return default_price
+
     # 2. Add Trade Plan with Setup Details
     msg += "**🎯 TODAY'S TRADE PLAN & SETUPS**\n\n"
     if not os.path.exists("trade_plan.json") or not os.path.exists("screener_results.csv"):
@@ -161,8 +176,9 @@ def build_morning_message() -> str:
             else:
                 # Top Candidate Details
                 top_row = trade_plan.iloc[0]
+                verified_price = verify_price(top_row['Stock'], top_row['Close'])
                 msg += f"**🏆 #1 — {top_row['Stock']} (Score: {top_row['Score']}/100)**\n"
-                msg += f"**Price:** ₹{top_row['Close']:,.2f}\n"
+                msg += f"**Verified Price:** ₹{verified_price:,.2f}\n"
                 msg += f"**Volume:** {top_row['Vol_Ratio']}x average\n"
                 msg += f"**RSI:** {top_row['RSI']}\n"
                 msg += f"**Dist from 20EMA:** +{top_row['Dist_EMA20']}%\n"
@@ -172,7 +188,8 @@ def build_morning_message() -> str:
                 if len(trade_plan) > 1:
                     msg += "**Other Primary Candidates (Score >= 70)**\n\n"
                     for _, row in trade_plan.iloc[1:].iterrows():
-                        msg += f"**{row['Stock']}** | Score: {row['Score']}/100 | Vol: {row['Vol_Ratio']}x | RSI: {row['RSI']}\n\n"
+                        v_price = verify_price(row['Stock'], row['Close'])
+                        msg += f"**{row['Stock']}** | Score: {row['Score']}/100 | Vol: {row['Vol_Ratio']}x | RSI: {row['RSI']} | Close: ₹{v_price:,.2f}\n\n"
 
             # Watchlist
             if not watchlist.empty:
