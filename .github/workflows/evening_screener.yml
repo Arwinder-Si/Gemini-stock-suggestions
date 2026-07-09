@@ -1,0 +1,56 @@
+# ============================================================
+# Evening Pipeline — Runs Mon-Fri at 3:45 PM IST (10:15 UTC)
+# ============================================================
+# Scans all 152 stocks, generates trade plan, sends Webex alert
+
+name: Evening Screener Pipeline
+
+on:
+  schedule:
+    # 3:45 PM IST = 10:15 AM UTC (Mon-Fri)
+    - cron: '15 10 * * 1-5'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  screener:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run News Sentiment Pipeline
+        run: python news_sentiment.py
+
+      - name: Run Comprehensive Screener
+        run: python comprehensive_screener.py
+
+      - name: Generate Intraday Trade Plan
+        run: python intraday_trigger.py
+
+      - name: Send Evening Webex Notification
+        env:
+          WEBEX_TOKEN: ${{ secrets.WEBEX_TOKEN }}
+          WEBEX_ROOM_ID: ${{ secrets.WEBEX_ROOM_ID }}
+        run: python notify_webex.py evening
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screener-results-${{ github.run_number }}
+          path: |
+            screener_results.csv
+            news_features.csv
+            trade_plan.json
+          retention-days: 30
