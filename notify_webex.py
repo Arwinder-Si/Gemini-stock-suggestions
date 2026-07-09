@@ -15,6 +15,10 @@ Usage:
 import json
 import os
 import sys
+import io
+
+# Fix Windows console emoji printing
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 
 import pandas as pd
 import requests
