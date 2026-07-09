@@ -31,13 +31,14 @@ def send_webex_alert(signal: Signal, bot_token: str, room_id: str) -> None:
     url = "https://webexapis.com/v1/messages"
 
     text = (
-        f"🚨 **ORB {signal.direction} SIGNAL** 🚨\n"
-        f"- **Symbol:** {signal.symbol}\n"
-        f"- **Entry:** {signal.entry}\n"
-        f"- **SL:** {signal.sl}\n"
-        f"- **TP:** {signal.tp}\n"
-        f"- **Reason:** {signal.reason}\n"
-        f"- **Time:** {signal.timestamp}"
+        f"## 🚨 ORB {signal.direction} SIGNAL\n\n"
+        f"> **Symbol:** `{signal.symbol}`\n"
+        f"> **Entry:** ₹{signal.entry:,.2f}\n"
+        f"> **Stop Loss:** ₹{signal.sl:,.2f}\n"
+        f"> **Take Profit:** ₹{signal.tp:,.2f}\n"
+        f">\n"
+        f"> _Reason:_ {signal.reason}\n"
+        f"> _Time:_ {signal.timestamp}"
     )
 
     headers = {

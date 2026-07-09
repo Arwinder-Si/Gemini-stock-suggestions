@@ -23,6 +23,12 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='repla
 import pandas as pd
 import requests
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 WEBEX_API = "https://webexapis.com/v1/messages"
 
 
@@ -141,29 +147,45 @@ def build_morning_message() -> str:
     except Exception as e:
         print(f"Error loading global context: {e}")
 
-    # 2. Add Trade Plan
-    msg += "### 🎯 TODAY'S TRADE PLAN\n\n"
-    if not os.path.exists("trade_plan.json"):
-        msg += "⚠️ No trade plan found. Run the evening pipeline first."
+    # 2. Add Trade Plan with Setup Details
+    msg += "### 🎯 TODAY'S TRADE PLAN & SETUPS\n\n"
+    if not os.path.exists("trade_plan.json") or not os.path.exists("screener_results.csv"):
+        msg += "> ⚠️ **No trade plan found.** Run the evening pipeline first.\n"
     else:
         with open("trade_plan.json", "r") as f:
             plan = json.load(f)
 
         if not plan:
-            msg += "🔴 **No trades today.** Screener found zero 70+ setups yesterday."
+            msg += "> 🔴 **No trades today.** Screener found zero 70+ setups yesterday.\n"
         else:
-            msg += "| Stock | Dhan Security ID |\n"
-            msg += "|-------|------------------|\n"
-            for symbol, sec_id in plan.items():
-                msg += f"| **{symbol}** | {sec_id} |\n"
+            # Load screener results to get the setup details (Close, Vol, Score)
+            try:
+                sdf = pd.read_csv("screener_results.csv").set_index("Stock")
+                
+                msg += "| Stock | Dhan ID | Close (Ref) | Vol Surge | Score |\n"
+                msg += "|---|---|---|---|---|\n"
+                for symbol, sec_id in plan.items():
+                    if symbol in sdf.index:
+                        row = sdf.loc[symbol]
+                        close_px = row.get('Close', 0.0)
+                        vol = row.get('Vol_Ratio', 0.0)
+                        score = row.get('Score', 0)
+                        msg += f"| **{symbol}** | `{sec_id}` | ₹{close_px:,.2f} | {vol}x | {score}/100 |\n"
+                    else:
+                        msg += f"| **{symbol}** | `{sec_id}` | - | - | - |\n"
+            except Exception as e:
+                print(f"Error loading setup details: {e}")
+                # Fallback
+                for symbol, sec_id in plan.items():
+                    msg += f"- **{symbol}** (ID: {sec_id})\n"
 
-    msg += "\n### ⏰ KEY TIMES\n"
-    msg += "- **9:15–9:30**: ORB forming — DO NOT TRADE\n"
-    msg += "- **9:30–9:45**: 🟢 PRIMARY ENTRY WINDOW\n"
-    msg += "- **10:30–11:30**: Start trailing stops\n"
-    msg += "- **11:30+**: Exit zone — no new entries\n"
+    msg += "\n### ⏰ TRADING PLAYBOOK\n"
+    msg += "> **9:15 – 9:30 AM**\n> ⏳ _Observation Phase_ — Let the 15-min ORB candle form. DO NOT TRADE.\n>\n"
+    msg += "> **9:30 – 9:45 AM**\n> 🟢 _Primary Entry Window_ — Watch for price to break above the ORB high with volume. Bot is armed.\n>\n"
+    msg += "> **10:30 – 11:30 AM**\n> 🛡️ _Defense Phase_ — Start trailing stops to breakeven. Momentum usually fades here.\n>\n"
+    msg += "> **11:30 AM+**\n> 🛑 _Exit Zone_ — No new entries. Let runners hit TP or trailing SL.\n"
 
-    msg += "\n---\n_Good luck today! 🚀_"
+    msg += "\n---\n_Bot is online. Good luck today! 🚀_"
     return msg
 
 
