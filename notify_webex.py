@@ -147,31 +147,42 @@ def build_morning_message() -> str:
     # 2. Add Trade Plan with Setup Details
     msg += "**🎯 TODAY'S TRADE PLAN & SETUPS**\n\n"
     if not os.path.exists("trade_plan.json") or not os.path.exists("screener_results.csv"):
-        msg += "⚠️ No trade plan found. Run the evening pipeline first.\n"
+        msg += "⚠️ No trade plan found. Run the evening pipeline first.\n\n"
     else:
-        with open("trade_plan.json", "r") as f:
-            plan = json.load(f)
+        try:
+            sdf = pd.read_csv("screener_results.csv")
+            
+            # Separate >= 70 (Trade Plan) and 60-69 (Watchlist)
+            trade_plan = sdf[sdf['Score'] >= 70].copy()
+            watchlist = sdf[(sdf['Score'] >= 60) & (sdf['Score'] < 70)].copy()
 
-        if not plan:
-            msg += "🔴 No trades today. Screener found zero 70+ setups yesterday.\n"
-        else:
-            try:
-                sdf = pd.read_csv("screener_results.csv").set_index("Stock")
-                
-                for symbol, sec_id in plan.items():
-                    if symbol in sdf.index:
-                        row = sdf.loc[symbol]
-                        close_px = row.get('Close', 0.0)
-                        vol = row.get('Vol_Ratio', 0.0)
-                        score = row.get('Score', 0)
-                        msg += f"**{symbol}** (ID: {sec_id})\n"
-                        msg += f"Close: ₹{close_px:,.2f} | Vol: {vol}x | Score: {score}/100\n\n"
-                    else:
-                        msg += f"**{symbol}** (ID: {sec_id})\n\n"
-            except Exception as e:
-                print(f"Error loading setup details: {e}")
-                for symbol, sec_id in plan.items():
-                    msg += f"**{symbol}** (ID: {sec_id})\n\n"
+            if trade_plan.empty:
+                msg += "🔴 No trades today. Screener found zero 70+ setups yesterday.\n\n"
+            else:
+                # Top Candidate Details
+                top_row = trade_plan.iloc[0]
+                msg += f"**🏆 #1 — {top_row['Stock']} (Score: {top_row['Score']}/100)**\n"
+                msg += f"**Price:** ₹{top_row['Close']:,.2f}\n"
+                msg += f"**Volume:** {top_row['Vol_Ratio']}x average\n"
+                msg += f"**RSI:** {top_row['RSI']}\n"
+                msg += f"**Dist from 20EMA:** +{top_row['Dist_EMA20']}%\n"
+                msg += f"_High-momentum {top_row['Sector']} candidate showing excellent relative volume._\n\n"
+
+                # Rest of the Trade Plan
+                if len(trade_plan) > 1:
+                    msg += "**Other Primary Candidates (Score >= 70)**\n\n"
+                    for _, row in trade_plan.iloc[1:].iterrows():
+                        msg += f"**{row['Stock']}** | Score: {row['Score']}/100 | Vol: {row['Vol_Ratio']}x | RSI: {row['RSI']}\n\n"
+
+            # Watchlist
+            if not watchlist.empty:
+                msg += "**👀 WATCHLIST (Strong but below 70 threshold)**\n\n"
+                for idx, row in enumerate(watchlist.itertuples(), start=1):
+                    msg += f"**{idx}. {row.Stock}** | Score: {row.Score} | Sector: {row.Sector} | Vol: {row.Vol_Ratio}x | RSI: {row.RSI}\n\n"
+                    
+        except Exception as e:
+            print(f"Error loading setup details: {e}")
+            msg += "⚠️ Failed to load detailed setups.\n\n"
 
     msg += "---\n\n"
     msg += "**⏰ TRADING PLAYBOOK**\n\n"
