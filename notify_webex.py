@@ -132,31 +132,29 @@ def build_morning_message() -> str:
         conn.close()
         
         if not global_df.empty and pred:
-            msg += "### 📊 GLOBAL OVERNIGHT SIGNALS\n"
+            msg += "**📊 GLOBAL OVERNIGHT SIGNALS**\n\n"
             for _, row in global_df.iterrows():
-                # Add simple trend emoji
                 trend = "🟢" if row['change_pct'] > 0 else "🔴"
                 if row['signal_name'] in ['Crude Oil', 'US 10Y Yield', 'Dollar Index']:
-                    trend = "🔴" if row['change_pct'] > 0 else "🟢" # Inverse for India
+                    trend = "🔴" if row['change_pct'] > 0 else "🟢" 
                     
-                msg += f"- **{row['signal_name']}**: {row['value']:,.2f} ({trend} {row['change_pct']:+.2f}%)\n"
+                msg += f"**{row['signal_name']}**: {row['value']:,.2f} ({trend} {row['change_pct']:+.2f}%)\n\n"
                 
-            msg += f"\n**🔮 GAP PREDICTION:** {pred['prediction_pct']:+.2f}% — _{pred['bias']}_\n\n"
+            msg += f"**🔮 GAP PREDICTION:** {pred['prediction_pct']:+.2f}% — {pred['bias']}\n\n---\n\n"
     except Exception as e:
         print(f"Error loading global context: {e}")
 
     # 2. Add Trade Plan with Setup Details
-    msg += "### 🎯 TODAY'S TRADE PLAN & SETUPS\n\n"
+    msg += "**🎯 TODAY'S TRADE PLAN & SETUPS**\n\n"
     if not os.path.exists("trade_plan.json") or not os.path.exists("screener_results.csv"):
-        msg += "> ⚠️ **No trade plan found.** Run the evening pipeline first.\n"
+        msg += "⚠️ No trade plan found. Run the evening pipeline first.\n"
     else:
         with open("trade_plan.json", "r") as f:
             plan = json.load(f)
 
         if not plan:
-            msg += "> 🔴 **No trades today.** Screener found zero 70+ setups yesterday.\n"
+            msg += "🔴 No trades today. Screener found zero 70+ setups yesterday.\n"
         else:
-            # Load screener results to get the setup details (Close, Vol, Score)
             try:
                 sdf = pd.read_csv("screener_results.csv").set_index("Stock")
                 
@@ -166,23 +164,23 @@ def build_morning_message() -> str:
                         close_px = row.get('Close', 0.0)
                         vol = row.get('Vol_Ratio', 0.0)
                         score = row.get('Score', 0)
-                        msg += f"- **{symbol}** (ID: `{sec_id}`)\n"
-                        msg += f"  > Close: ₹{close_px:,.2f} | Vol: {vol}x | Score: {score}/100\n\n"
+                        msg += f"**{symbol}** (ID: {sec_id})\n"
+                        msg += f"Close: ₹{close_px:,.2f} | Vol: {vol}x | Score: {score}/100\n\n"
                     else:
-                        msg += f"- **{symbol}** (ID: `{sec_id}`)\n\n"
+                        msg += f"**{symbol}** (ID: {sec_id})\n\n"
             except Exception as e:
                 print(f"Error loading setup details: {e}")
-                # Fallback
                 for symbol, sec_id in plan.items():
-                    msg += f"- **{symbol}** (ID: `{sec_id}`)\n"
+                    msg += f"**{symbol}** (ID: {sec_id})\n\n"
 
-    msg += "\n### ⏰ TRADING PLAYBOOK\n"
-    msg += "> **9:15 – 9:30 AM**\n> ⏳ _Observation Phase_ — Let the 15-min ORB candle form. DO NOT TRADE.\n>\n"
-    msg += "> **9:30 – 9:45 AM**\n> 🟢 _Primary Entry Window_ — Watch for price to break above the ORB high with volume. Bot is armed.\n>\n"
-    msg += "> **10:30 – 11:30 AM**\n> 🛡️ _Defense Phase_ — Start trailing stops to breakeven. Momentum usually fades here.\n>\n"
-    msg += "> **11:30 AM+**\n> 🛑 _Exit Zone_ — No new entries. Let runners hit TP or trailing SL.\n"
+    msg += "---\n\n"
+    msg += "**⏰ TRADING PLAYBOOK**\n\n"
+    msg += "**9:15 – 9:30 AM** (Observation Phase)\nLet the 15-min ORB candle form. DO NOT TRADE.\n\n"
+    msg += "**9:30 – 9:45 AM** (Primary Entry Window)\n🟢 Watch for price to break above the ORB high with volume.\n\n"
+    msg += "**10:30 – 11:30 AM** (Defense Phase)\n🛡️ Start trailing stops to breakeven.\n\n"
+    msg += "**11:30 AM+** (Exit Zone)\n🛑 No new entries. Let runners hit TP or trailing SL.\n\n"
 
-    msg += "\n---\n_Bot is online. Good luck today! 🚀_"
+    msg += "---\n_Bot is online. Good luck today! 🚀_"
     return msg
 
 
