@@ -1,0 +1,33 @@
+# Byte-compiled / optimized
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+
+# Environment secrets
+.env
+
+# Logs and outputs
+*.log
+signals.csv
+backtest_results.csv
+
+# Generated data files (re-generated on each run)
+screener_results.csv
+news_features.csv
+news_raw_articles.csv
+trade_plan.json
+nse_eq_mapping.json
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Gemini agent files
+.agents/
