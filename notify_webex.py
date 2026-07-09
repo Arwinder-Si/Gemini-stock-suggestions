@@ -133,15 +133,13 @@ def build_morning_message() -> str:
         
         if not global_df.empty and pred:
             msg += "### 📊 GLOBAL OVERNIGHT SIGNALS\n"
-            msg += "| Market | Value | Change |\n"
-            msg += "|--------|-------|--------|\n"
             for _, row in global_df.iterrows():
                 # Add simple trend emoji
                 trend = "🟢" if row['change_pct'] > 0 else "🔴"
                 if row['signal_name'] in ['Crude Oil', 'US 10Y Yield', 'Dollar Index']:
                     trend = "🔴" if row['change_pct'] > 0 else "🟢" # Inverse for India
                     
-                msg += f"| **{row['signal_name']}** | {row['value']:,.2f} | {trend} {row['change_pct']:+.2f}% |\n"
+                msg += f"- **{row['signal_name']}**: {row['value']:,.2f} ({trend} {row['change_pct']:+.2f}%)\n"
                 
             msg += f"\n**🔮 GAP PREDICTION:** {pred['prediction_pct']:+.2f}% — _{pred['bias']}_\n\n"
     except Exception as e:
@@ -162,22 +160,21 @@ def build_morning_message() -> str:
             try:
                 sdf = pd.read_csv("screener_results.csv").set_index("Stock")
                 
-                msg += "| Stock | Dhan ID | Close (Ref) | Vol Surge | Score |\n"
-                msg += "|---|---|---|---|---|\n"
                 for symbol, sec_id in plan.items():
                     if symbol in sdf.index:
                         row = sdf.loc[symbol]
                         close_px = row.get('Close', 0.0)
                         vol = row.get('Vol_Ratio', 0.0)
                         score = row.get('Score', 0)
-                        msg += f"| **{symbol}** | `{sec_id}` | ₹{close_px:,.2f} | {vol}x | {score}/100 |\n"
+                        msg += f"- **{symbol}** (ID: `{sec_id}`)\n"
+                        msg += f"  > Close: ₹{close_px:,.2f} | Vol: {vol}x | Score: {score}/100\n\n"
                     else:
-                        msg += f"| **{symbol}** | `{sec_id}` | - | - | - |\n"
+                        msg += f"- **{symbol}** (ID: `{sec_id}`)\n\n"
             except Exception as e:
                 print(f"Error loading setup details: {e}")
                 # Fallback
                 for symbol, sec_id in plan.items():
-                    msg += f"- **{symbol}** (ID: {sec_id})\n"
+                    msg += f"- **{symbol}** (ID: `{sec_id}`)\n"
 
     msg += "\n### ⏰ TRADING PLAYBOOK\n"
     msg += "> **9:15 – 9:30 AM**\n> ⏳ _Observation Phase_ — Let the 15-min ORB candle form. DO NOT TRADE.\n>\n"
