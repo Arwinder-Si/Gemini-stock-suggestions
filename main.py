@@ -103,13 +103,20 @@ def main() -> None:
     logger.info(f"Loaded Trade Plan with {len(loaded_stocks)} stocks: {', '.join(loaded_stocks)}")
     logger.info("Attempting to connect to Dhan live feed...")
 
+    try:
+        from auth_manager import get_fresh_dhan_token
+        access_token = get_fresh_dhan_token(cfg.dhan_client_id, cfg.dhan_pin, cfg.dhan_totp_secret)
+    except Exception as e:
+        logger.error(f"Failed to generate Dhan Access Token via TOTP: {e}")
+        sys.exit(1)
+
     # Bounded queue — prevents unbounded memory growth
     strategy_queue: queue.Queue = queue.Queue(maxsize=1000)
     stop_event = threading.Event()
 
     producer = MarketFeedProducer(
         client_id=cfg.dhan_client_id,
-        access_token=cfg.dhan_access_token,
+        access_token=access_token,
         security_ids=cfg.security_ids,
         strategy_queues=[strategy_queue],
         security_id_to_name=cfg.security_id_to_name,

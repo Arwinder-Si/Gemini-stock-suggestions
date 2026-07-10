@@ -16,7 +16,8 @@ class Settings(BaseSettings):
 
     # Dhan API
     dhan_client_id: str = Field(default="", alias="DHAN_CLIENT_ID")
-    dhan_access_token: str = Field(default="", alias="DHAN_ACCESS_TOKEN")
+    dhan_pin: str = Field(default="", alias="DHAN_PIN")
+    dhan_totp_secret: str = Field(default="", alias="DHAN_TOTP_SECRET")
 
     # Comma-separated list of "NAME:SECURITY_ID" pairs
     # e.g. "RELIANCE:11536,TCS:3456"
