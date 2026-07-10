@@ -50,6 +50,14 @@ timeout 23400 python main.py
 EOF
 chmod +x run_live_bot.sh
 
+cat << 'EOF' > run_pnl.sh
+#!/bin/bash
+cd "$(dirname "$0")"
+source venv/bin/activate
+python notify_webex.py pnl
+EOF
+chmod +x run_pnl.sh
+
 # 4. Set up Crontab
 # We will explicitly set the VM timezone to Asia/Kolkata so cron matches IST exactly.
 echo "🕒 Setting server timezone to IST (Asia/Kolkata)..."
@@ -64,7 +72,10 @@ echo "" >> $CRON_FILE
 echo "# 2. Start Live Intraday Bot at 9:00 AM (Mon-Fri)" >> $CRON_FILE
 echo "00 09 * * 1-5 $(pwd)/run_live_bot.sh >> $(pwd)/live_bot.log 2>&1" >> $CRON_FILE
 echo "" >> $CRON_FILE
-echo "# 3. Evening Screener & Report at 3:45 PM (Mon-Fri)" >> $CRON_FILE
+echo "# 3. End of Day P&L Report at 3:40 PM (Mon-Fri)" >> $CRON_FILE
+echo "40 15 * * 1-5 $(pwd)/run_pnl.sh >> $(pwd)/pnl.log 2>&1" >> $CRON_FILE
+echo "" >> $CRON_FILE
+echo "# 4. Evening Screener & Report at 3:45 PM (Mon-Fri)" >> $CRON_FILE
 echo "45 15 * * 1-5 $(pwd)/run_evening.sh >> $(pwd)/evening.log 2>&1" >> $CRON_FILE
 
 crontab $CRON_FILE

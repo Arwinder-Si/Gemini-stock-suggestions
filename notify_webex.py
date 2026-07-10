@@ -212,20 +212,81 @@ def build_morning_message() -> str:
     return msg
 
 
+def build_pnl_message() -> str:
+    """Connect to Dhan API, fetch today's positions, and build a P&L report."""
+    from config import get_config
+    from auth_manager import get_fresh_dhan_token
+    from dhanhq import dhanhq
+    import datetime
+    
+    cfg = get_config()
+    try:
+        token = get_fresh_dhan_token(cfg.dhan_client_id, cfg.dhan_pin, cfg.dhan_totp_secret)
+        dhan = dhanhq(cfg.dhan_client_id, token)
+        
+        resp = dhan.get_positions()
+        if resp.get('status') != 'success':
+            return "⚠️ **Failed to fetch P&L from Dhan API.**\n" + str(resp)
+            
+        positions = resp.get('data', [])
+        
+        today_str = datetime.datetime.now().strftime("%B %d, %Y")
+        msg = f"## 💰 END OF DAY P&L REPORT ({today_str})\n\n"
+        
+        if not positions:
+            msg += "No trades were taken today.\n"
+            return msg
+            
+        total_realized = 0.0
+        total_unrealized = 0.0
+        
+        msg += "**Trade Breakdown:**\n\n"
+        for pos in positions:
+            symbol = pos.get('tradingSymbol', 'UNKNOWN')
+            realized = float(pos.get('realizedProfit', 0.0))
+            unrealized = float(pos.get('unrealizedProfit', 0.0))
+            net_qty = pos.get('netQty', 0)
+            status = pos.get('positionType', '')
+            
+            pnl = realized + unrealized
+            total_realized += realized
+            total_unrealized += unrealized
+            
+            emoji = "🟢" if pnl >= 0 else "🔴"
+            qty_str = f"(Open: {net_qty})" if net_qty != 0 else "(Closed)"
+            
+            msg += f"**{symbol}** {qty_str}: {emoji} ₹{pnl:,.2f}\n"
+            
+        net_total = total_realized + total_unrealized
+        total_emoji = "🏆" if net_total >= 0 else "🩸"
+        
+        msg += "\n---\n\n"
+        msg += f"**Gross Realized:** ₹{total_realized:,.2f}\n"
+        msg += f"**Gross Unrealized:** ₹{total_unrealized:,.2f}\n\n"
+        msg += f"### {total_emoji} NET TOTAL P&L: ₹{net_total:,.2f}\n"
+        
+        return msg
+        
+    except Exception as e:
+        return f"⚠️ **Error generating P&L report:** {e}"
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python notify_webex.py [evening|morning]")
+        print("Usage: python notify_webex.py [evening|morning|pnl]")
         sys.exit(1)
 
     mode = sys.argv[1].lower()
 
     if mode == "evening":
-        message = build_evening_message()
+        msg = build_evening_message()
     elif mode == "morning":
-        message = build_morning_message()
+        msg = build_morning_message()
+    elif mode == "pnl":
+        msg = build_pnl_message()
     else:
-        print(f"Unknown mode: {mode}")
+        print("Invalid mode. Use 'evening', 'morning', or 'pnl'.")
         sys.exit(1)
 
-    print(f"\n--- Message Preview ---\n{message}\n--- End Preview ---\n")
-    send_webex_message(message)
+    print(f"\n--- Message Preview ---\n{msg}\n--- End Preview ---\n")
+    send_webex_message(msg)
