@@ -263,8 +263,41 @@ def build_pnl_message() -> str:
         msg += "\n---\n\n"
         msg += f"**Gross Realized:** ₹{total_realized:,.2f}\n"
         msg += f"**Gross Unrealized:** ₹{total_unrealized:,.2f}\n\n"
-        msg += f"### {total_emoji} NET TOTAL P&L: ₹{net_total:,.2f}\n"
+        msg += f"### {total_emoji} NET INTRADAY P&L: ₹{net_total:,.2f}\n"
         
+        # --- HOLDINGS SECTION ---
+        holdings_resp = dhan.get_holdings()
+        if holdings_resp.get('status') == 'success':
+            holdings = holdings_resp.get('data', [])
+            if holdings:
+                msg += "\n---\n\n## 💼 PORTFOLIO HOLDINGS\n\n"
+                total_portfolio_mtm = 0.0
+                total_invested = 0.0
+                total_current = 0.0
+                
+                for h in holdings:
+                    symbol = h.get('tradingSymbol', 'UNKNOWN')
+                    qty = h.get('totalQty', 0)
+                    buy_price = h.get('avgCostPrice', 0.0)
+                    ltp = h.get('lastTradedPrice', 0.0)
+                    
+                    if qty > 0:
+                        invested = qty * buy_price
+                        current_val = qty * ltp
+                        mtm = current_val - invested
+                        
+                        total_invested += invested
+                        total_current += current_val
+                        total_portfolio_mtm += mtm
+                        
+                        emoji = "🟢" if mtm >= 0 else "🔴"
+                        msg += f"**{symbol}** (Qty: {qty}): {emoji} ₹{mtm:,.2f}\n"
+                        
+                port_emoji = "🏆" if total_portfolio_mtm >= 0 else "🩸"
+                msg += f"\n**Total Invested:** ₹{total_invested:,.2f}\n"
+                msg += f"**Current Value:** ₹{total_current:,.2f}\n"
+                msg += f"### {port_emoji} TOTAL PORTFOLIO MTM: ₹{total_portfolio_mtm:,.2f}\n"
+
         return msg
         
     except Exception as e:
