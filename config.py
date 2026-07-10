@@ -34,6 +34,8 @@ class Settings(BaseSettings):
     # Webex
     webex_token: str = Field(default="", alias="WEBEX_TOKEN")
     webex_room_id: str = Field(default="", alias="WEBEX_ROOM_ID")
+    bot_public_url: str = Field(default="", alias="BOT_PUBLIC_URL")
+    bot_port: int = Field(default=5050, alias="BOT_PORT")
 
     model_config = SettingsConfigDict(
         env_file=".env",

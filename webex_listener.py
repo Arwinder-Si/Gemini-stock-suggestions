@@ -12,7 +12,6 @@ Commands:
   /morning  — Force a Morning Gap Prediction
 """
 
-import os
 import sys
 import subprocess
 import logging
@@ -36,6 +35,8 @@ app = Flask(__name__)
 cfg = get_config()
 WEBEX_TOKEN = cfg.webex_token
 ROOM_ID = cfg.webex_room_id
+BOT_PUBLIC_URL = cfg.bot_public_url.rstrip("/")
+BOT_PORT = cfg.bot_port
 BOT_ID = None  # Set during init
 
 
@@ -202,14 +203,14 @@ def init_bot():
         logger.error(f"Failed to get bot identity: {me_resp.status_code}")
         sys.exit(1)
 
-    # Register webhook if PUBLIC_URL is set
-    public_url = os.getenv("BOT_PUBLIC_URL", "").rstrip("/")
-    if public_url:
-        register_webhook(public_url)
+    if BOT_PUBLIC_URL:
+        register_webhook(BOT_PUBLIC_URL)
     else:
         logger.warning(
-            "BOT_PUBLIC_URL not set. Webhook not registered. "
-            "Set it to your VM's public URL (e.g., http://YOUR_VM_IP:5050)"
+            "BOT_PUBLIC_URL not set. Webhook not registered — "
+            "interactive commands (/ping, /pnl, etc.) will not work. "
+            "Add BOT_PUBLIC_URL to .env (public HTTPS URL, e.g. "
+            "https://YOUR_VM_IP:5050 or an ngrok tunnel) and restart."
         )
 
 
@@ -220,6 +221,5 @@ if __name__ == "__main__":
 
     init_bot()
 
-    port = int(os.getenv("BOT_PORT", 5050))
-    logger.info(f"Starting Hermes ChatOps server on port {port}...")
-    app.run(host="0.0.0.0", port=port)
+    logger.info(f"Starting Hermes ChatOps server on port {BOT_PORT}...")
+    app.run(host="0.0.0.0", port=BOT_PORT)
