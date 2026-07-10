@@ -58,7 +58,31 @@ python notify_webex.py pnl
 EOF
 chmod +x run_pnl.sh
 
-# 4. Set up Crontab
+# 4. Set up ChatOps Listener Daemon (Systemd)
+echo "🤖 Installing Webex ChatOps Listener..."
+SERVICE_FILE="/etc/systemd/system/nse-bot-listener.service"
+sudo bash -c "cat << 'EOF' > $SERVICE_FILE
+[Unit]
+Description=NSE Webex ChatOps Listener
+After=network.target
+
+[Service]
+Type=simple
+User=$USER
+WorkingDirectory=$(pwd)
+ExecStart=$(pwd)/venv/bin/python $(pwd)/webex_listener.py
+Restart=always
+RestartSec=5
+Environment=PATH=$(pwd)/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+[Install]
+WantedBy=multi-user.target
+EOF"
+sudo systemctl daemon-reload
+sudo systemctl enable nse-bot-listener.service
+sudo systemctl restart nse-bot-listener.service
+
+# 5. Set up Crontab
 # We will explicitly set the VM timezone to Asia/Kolkata so cron matches IST exactly.
 echo "🕒 Setting server timezone to IST (Asia/Kolkata)..."
 sudo timedatectl set-timezone Asia/Kolkata
