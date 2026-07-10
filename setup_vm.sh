@@ -59,28 +59,32 @@ EOF
 chmod +x run_pnl.sh
 
 # 4. Set up ChatOps Listener Daemon (Systemd)
-echo "🤖 Installing Webex ChatOps Listener..."
+echo "🤖 Installing Webex ChatOps Listener (Flask webhook server)..."
 SERVICE_FILE="/etc/systemd/system/nse-bot-listener.service"
-sudo bash -c "cat << 'EOF' > $SERVICE_FILE
+sudo bash -c "cat << EOFSERVICE > $SERVICE_FILE
 [Unit]
-Description=NSE Webex ChatOps Listener
+Description=Hermes Webex ChatOps Listener
 After=network.target
 
 [Service]
 Type=simple
 User=$USER
 WorkingDirectory=$(pwd)
+EnvironmentFile=$(pwd)/.env
 ExecStart=$(pwd)/venv/bin/python $(pwd)/webex_listener.py
 Restart=always
 RestartSec=5
-Environment=PATH=$(pwd)/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 [Install]
 WantedBy=multi-user.target
-EOF"
+EOFSERVICE"
 sudo systemctl daemon-reload
 sudo systemctl enable nse-bot-listener.service
 sudo systemctl restart nse-bot-listener.service
+
+# Open firewall port for Webex webhooks
+echo "🔓 Opening firewall port 5050 for Webex webhooks..."
+sudo ufw allow 5050/tcp 2>/dev/null || true
 
 # 5. Set up Crontab
 # We will explicitly set the VM timezone to Asia/Kolkata so cron matches IST exactly.
