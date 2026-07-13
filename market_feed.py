@@ -146,11 +146,8 @@ class MarketFeedProducer:
 
     def start(self) -> None:
         """Blocking call — run inside a dedicated thread."""
-        # Lazy import so the rest of the codebase isn't blocked if
-        # dhanhq is not installed (e.g., during unit tests).
         try:
-            from dhanhq import DhanFeed
-            from dhanhq.marketfeed import NSE, Quote
+            from dhanhq import MarketFeed
         except Exception as e:
             logger.error(f"dhanhq import failed: {e}")
             return
@@ -159,9 +156,16 @@ class MarketFeedProducer:
 
         # Build instrument list: (ExchangeSegment, SecurityId, SubscriptionType)
         instruments = [
-            (NSE, str(sid), Quote)
+            (MarketFeed.NSE, str(sid), MarketFeed.Quote)
             for sid in self._security_ids
         ]
+
+        class _MockDhanContext:
+            def __init__(self, c, a):
+                self.c = c
+                self.a = a
+            def get_client_id(self): return self.c
+            def get_access_token(self): return self.a
 
         while self._is_running:
             try:
@@ -170,14 +174,16 @@ class MarketFeedProducer:
                     len(instruments),
                 )
                 
-                # New v2 DhanFeed SDK usage
-                feed = DhanFeed(self._client_id, self._access_token, instruments, version='v2')
-                
-                # Override the internal callback to route ticks to our aggregator
-                feed.on_ticks = lambda msg: self._on_message(None, msg)
-                
-                # We can also mock on_connect / on_close if the SDK supports them or just call them manually
-                self._on_connect()
+                # New v2 MarketFeed SDK usage
+                context = _MockDhanContext(self._client_id, self._access_token)
+                feed = MarketFeed(
+                    context, 
+                    instruments, 
+                    version='v2',
+                    on_connect=lambda *args: self._on_connect(),
+                    on_message=lambda ws, msg: self._on_message(ws, msg),
+                    on_close=lambda *args: self._on_close(None)
+                )
                 
                 self._backoff = self.INITIAL_BACKOFF_SECS  # reset on success
                 feed.run_forever()  # blocks until disconnect

@@ -27,8 +27,9 @@ class HistoricalDataLoader:
     """Fetches intraday 1-min candles from the DhanHQ REST API (v2)."""
 
     def __init__(self, client_id: str, access_token: str) -> None:
-        from dhanhq import dhanhq  # lazy import
-        self._dhan = dhanhq(client_id, access_token)
+        from dhanhq import dhanhq, DhanContext  # lazy import
+        context = DhanContext(client_id, access_token)
+        self._dhan = dhanhq(context)
 
     def fetch_intraday_data(
         self,

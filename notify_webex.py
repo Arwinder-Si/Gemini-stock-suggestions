@@ -216,13 +216,15 @@ def build_pnl_message() -> str:
     """Connect to Dhan API, fetch today's positions, and build a P&L report."""
     from config import get_config
     from auth_manager import get_fresh_dhan_token
-    from dhanhq import dhanhq
     import datetime
     
     cfg = get_config()
+    token = get_fresh_dhan_token(cfg.dhan_client_id, cfg.dhan_pin, cfg.dhan_totp_secret)
+    
     try:
-        token = get_fresh_dhan_token(cfg.dhan_client_id, cfg.dhan_pin, cfg.dhan_totp_secret)
-        dhan = dhanhq(cfg.dhan_client_id, token)
+        from dhanhq import dhanhq, DhanContext
+        context = DhanContext(cfg.dhan_client_id, token)
+        dhan = dhanhq(context)
         
         resp = dhan.get_positions()
         if resp.get('status') != 'success':
