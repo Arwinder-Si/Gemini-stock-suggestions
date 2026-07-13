@@ -239,6 +239,7 @@ def build_pnl_message() -> str:
             msg += "No trades were taken today.\n"
             return msg
             
+        total_charges = 0.0
         total_realized = 0.0
         total_unrealized = 0.0
         
@@ -248,24 +249,47 @@ def build_pnl_message() -> str:
             realized = float(pos.get('realizedProfit', 0.0))
             unrealized = float(pos.get('unrealizedProfit', 0.0))
             net_qty = pos.get('netQty', 0)
-            status = pos.get('positionType', '')
             
-            pnl = realized + unrealized
+            segment = pos.get('exchangeSegment', '')
+            product = pos.get('productType', '')
+            buy_val = float(pos.get('dayBuyValue', 0.0))
+            sell_val = float(pos.get('daySellValue', 0.0))
+            turnover = buy_val + sell_val
+            
+            # Estimate Charges
+            brokerage = min(40.0, 0.0003 * turnover) if 'EQ' in segment else 40.0
+            if 'FNO' in segment:
+                stt = 0.00125 * sell_val
+                txn_chg = 0.0005 * turnover
+                stamp = 0.00003 * buy_val
+            else:
+                stt = 0.00025 * sell_val if product == 'INTRADAY' else 0.001 * turnover
+                txn_chg = 0.0000325 * turnover
+                stamp = 0.00003 * buy_val if product == 'INTRADAY' else 0.00015 * buy_val
+                
+            sebi = 0.000001 * turnover
+            gst = 0.18 * (brokerage + txn_chg + sebi)
+            pos_charges = brokerage + stt + txn_chg + stamp + gst + sebi
+            total_charges += pos_charges
+            net_profit = realized - pos_charges
+            
             total_realized += realized
             total_unrealized += unrealized
             
-            emoji = "🟢" if pnl >= 0 else "🔴"
-            qty_str = f"(Open: {net_qty})" if net_qty != 0 else "(Closed)"
-            
-            msg += f"**{symbol}** {qty_str}: {emoji} ₹{pnl:,.2f}\n"
-            
-        net_total = total_realized + total_unrealized
-        total_emoji = "🏆" if net_total >= 0 else "🩸"
+            if net_qty == 0:
+                icon = "🟢" if net_profit > 0 else "🔴"
+                msg += f"**{symbol}** (Closed): {icon} Gross: ₹{realized:.2f} | Net: ₹{net_profit:.2f} *(Chg: ₹{pos_charges:.2f})*\n"
+            else:
+                icon = "🟢" if unrealized > 0 else "🔴"
+                msg += f"**{symbol}** (Open {net_qty}): {icon} Gross MTM: ₹{unrealized:.2f}\n"
+
+        net_pnl = (total_realized + total_unrealized) - total_charges
         
-        msg += "\n---\n\n"
-        msg += f"**Gross Realized:** ₹{total_realized:,.2f}\n"
-        msg += f"**Gross Unrealized:** ₹{total_unrealized:,.2f}\n\n"
-        msg += f"### {total_emoji} NET INTRADAY P&L: ₹{net_total:,.2f}\n"
+        msg += "---\n\n"
+        msg += f"**Gross Realized:** ₹{total_realized:.2f}\n"
+        msg += f"**Gross Unrealized:** ₹{total_unrealized:.2f}\n"
+        msg += f"**Est. Charges & Taxes:** ₹{total_charges:.2f}\n"
+        msg += f"### 🏆 NET P&L: ₹{net_pnl:.2f}\n\n"
         
         # --- HOLDINGS SECTION ---
         holdings_resp = dhan.get_holdings()

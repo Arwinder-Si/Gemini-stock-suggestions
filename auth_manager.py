@@ -1,6 +1,9 @@
+import os
+import json
 import requests
-import pyotp
 import logging
+import pyotp
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -17,26 +20,63 @@ def get_fresh_dhan_token(client_id: str, pin: str, totp_secret: str) -> str:
 
     # 2. Call Dhan Auth API
     url = "https://auth.dhan.co/app/generateAccessToken"
-    params = {
-        "dhanClientId": client_id,
-        "pin": pin,
-        "totp": current_otp
-    }
+    # Try to load cached token
+    cache_file = ".dhan_token_cache.json"
+    if os.path.exists(cache_file):
+        try:
+            with open(cache_file, 'r') as f:
+                cache = json.load(f)
+            # Check if token was generated today
+            token_date = cache.get("date", "")
+            today_str = datetime.now().strftime("%Y-%m-%d")
+            if token_date == today_str and cache.get("token"):
+                return cache["token"]
+        except Exception as e:
+            logger.warning(f"Failed to read token cache: {e}")
+
+    logger.info(f"Requesting fresh access token for Client ID ending in ...{client_id[-4:]}")
+    
+    url = "https://auth.dhan.co/app/generateAccessToken"
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)'
+        "Accept": "application/json",
+        "Content-Type": "application/json"
     }
     
-    logger.info("Requesting fresh access token for Client ID ending in ...%s", client_id[-4:])
-    
-    response = requests.post(url, params=params, headers=headers)
-    
-    if response.status_code == 200:
-        data = response.json()
-        token = data.get("accessToken")
-        if token:
-            logger.info("Successfully generated fresh Access Token.")
-            return token
+    import time
+    for attempt in range(12):
+        totp = pyotp.TOTP(totp_secret).now()
+        params = {
+            "dhanClientId": client_id,
+            "pin": pin,
+            "totp": totp
+        }
+        
+        response = requests.post(url, params=params, headers=headers)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if "accessToken" in data:
+                token = data["accessToken"]
+                # Save to cache
+                try:
+                    with open(cache_file, 'w') as f:
+                        json.dump({
+                            "date": datetime.now().strftime("%Y-%m-%d"),
+                            "token": token
+                        }, f)
+                except Exception as e:
+                    logger.warning(f"Failed to write token cache: {e}")
+                logger.info("Successfully generated and cached fresh Access Token.")
+                return token
+            else:
+                msg = data.get('message', '')
+                if 'Invalid TOTP' in msg or '2 minutes' in msg:
+                    logger.warning(f"TOTP issue ({msg}), retrying in 10s (attempt {attempt+1}/12)...")
+                    time.sleep(10)
+                    continue
+                raise Exception(f"Token not found in response. Response: {data}")
         else:
-            raise Exception(f"Token not found in response. Response: {data}")
-    else:
-        raise Exception(f"Auth API failed with status {response.status_code}. Details: {response.text}")
+            logger.warning(f"Auth failed with HTTP {response.status_code}, retrying...")
+            time.sleep(5)
+            
+    raise Exception("Failed to generate Dhan Access Token after multiple retries.")
