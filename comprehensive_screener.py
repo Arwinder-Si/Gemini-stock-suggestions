@@ -96,6 +96,28 @@ SECTOR_MAP = {
     'BOSCHLTD': 'Auto', 'MRF': 'Auto', 'GRASIM': 'Diversified',
     'BHARTIARTL': 'Telecom',
     'VBL': 'FMCG',
+    # ── Small Cap Sectors ──
+    'HIRECT': 'Electronics', 'NUVOCO': 'Cement', 'HFCL': 'Telecom', 'ITDC': 'Tourism',
+    'ZENITHEXPO': 'Infra', 'SUZLON': 'Power',
+    'RPOWER': 'Power', 'GTLINFRA': 'Telecom',
+    'IDEA': 'Telecom', 'YESBANK': 'Banking', 'UCOBANK': 'Banking', 'IOB': 'Banking',
+    'CENTRALBK': 'Banking', 'BANKINDIA': 'Banking', 'MAHABANK': 'Banking',
+    'PSB': 'Banking', 'J&KBANK': 'Banking', 'SOUTHBANK': 'Banking',
+    'KARURVYSYA': 'Banking', 'EQUITASBNK': 'Banking', 'UJJIVANSFB': 'Banking',
+    'SURYODAY': 'Banking', 'ESAFSFB': 'Banking',
+    'IRB': 'Infra', 'HCC': 'Infra', 'TRIDENT': 'Textile',
+    'VAKRANGEE': 'IT', 'PCJEWELLER': 'Consumer', 'ALOKINDS': 'Textile',
+    'GVKPIL': 'Infra', 'RCOM': 'Telecom',
+    'AWL': 'FMCG', 'NDTV': 'Media', 'BSE': 'Financial Services',
+    'CDSL': 'Financial Services', 'CAMS': 'Financial Services',
+    'ANGELONE': 'Financial Services', 'MOTILALOFS': 'Financial Services',
+    'UTIAMC': 'Financial Services', 'NAM-INDIA': 'Financial Services',
+    'KPITTECH': 'IT', 'PERSISTENT': 'IT', 'PAYTM': 'New-Age',
+    'DELHIVERY': 'New-Age', 'POLICYBZR': 'New-Age', 'NYKAA': 'New-Age',
+    'TATAELXSI': 'IT', 'COFORGE': 'IT',
+    'RVNL': 'Infra', 'IRFC': 'Infra', 'RAILTEL': 'Telecom',
+    'HUDCO': 'Infra', 'IREDA': 'NBFC', 'COCHINSHIP': 'Defence', 'GRSE': 'Defence',
+    'JETAIRWAYS': 'Aviation',
 }
 
 # =============================================================================
@@ -139,16 +161,28 @@ NIFTY_MIDCAP = [
 ]
 
 SMALL_CAP = [
+    # User-requested stocks
     'HIRECT', 'NUVOCO', 'HFCL', 'ITDC',
-    'ZENITHEXPO', 'SUZLON', 'JPASSOCIAT', 'RPOWER', 'GTLINFRA',
-    'IDEA', 'YESBANK', 'UCOBANK', 'IOB', 'CENTRALBK',
-    'BANKINDIA', 'MAHABANK', 'PSB', 'J&KBANK', 'SOUTHBANK',
-    'KARURVYSYA', 'EQUITASBNK', 'UJJIVANSFB', 'SURYODAY', 'ESAFSFB',
-    'IRB', 'HCC', 'JETAIRWAYS', 'SPICEJET', 'TRIDENT',
-    'VAKRANGEE', 'PCJEWELLER', 'ALOKINDS', 'SINTEX', 'GVKPIL',
-    'RELCAPITAL', 'RCOM', 'ADANIPOWER', 'ADANIGREEN', 'AWL',
-    'NDTV', 'BSE', 'CDSL', 'CAMS', 'ANGELONE',
-    'MOTILALOFS', 'ISEC', 'UTIAMC', 'NAM-INDIA', 'NIPPON'
+    # Power / Energy
+    'SUZLON', 'RPOWER', 'ADANIPOWER', 'ADANIGREEN',
+    # Banking (small PSU + SFBs)
+    'YESBANK', 'UCOBANK', 'IOB', 'CENTRALBK', 'BANKINDIA',
+    'MAHABANK', 'PSB', 'J&KBANK', 'SOUTHBANK', 'KARURVYSYA',
+    'EQUITASBNK', 'UJJIVANSFB', 'SURYODAY', 'ESAFSFB',
+    # Infra / Construction
+    'IRB', 'HCC', 'RVNL', 'HUDCO', 'IRFC', 'RAILTEL',
+    # Defence
+    'COCHINSHIP', 'GRSE',
+    # IT / Tech (small cap)
+    'KPITTECH', 'PERSISTENT', 'TATAELXSI', 'COFORGE',
+    # New-Age / Fintech
+    'PAYTM', 'DELHIVERY', 'POLICYBZR', 'NYKAA',
+    # Financial Services
+    'BSE', 'CDSL', 'CAMS', 'ANGELONE', 'MOTILALOFS', 'UTIAMC', 'NAM-INDIA',
+    # Consumer / Textile / Media
+    'AWL', 'NDTV', 'TRIDENT', 'IREDA',
+    # Telecom
+    'IDEA', 'ZENITHEXPO',
 ]
 
 import argparse
@@ -290,8 +324,9 @@ def run_screener():
             name = ticker.replace('.NS', '')
             current_close = close.iloc[-1]
 
-            # Skip penny stocks
-            if current_close < 50:
+            # Skip penny stocks (stricter floor for small caps)
+            penny_floor = 100 if args.universe == "small" else 50
+            if current_close < penny_floor:
                 continue
 
             # ============================================================
@@ -437,19 +472,31 @@ def run_screener():
             penalties = []
 
             # Penalty 1: OVEREXTENSION — distance from 20 EMA
+            # Small caps get stricter thresholds (they reverse faster)
             dist_from_ema20_pct = (current_close - ema_20) / ema_20 * 100
-            if dist_from_ema20_pct > 12:
+            if args.universe == "small":
+                ext_thresholds = (8, 5, 3)  # Stricter for small caps
+            else:
+                ext_thresholds = (12, 8, 5)  # Standard for large caps
+
+            if dist_from_ema20_pct > ext_thresholds[0]:
                 penalty = -15
                 penalties.append(f"Overextended {dist_from_ema20_pct:.1f}% above 20EMA (-15)")
-            elif dist_from_ema20_pct > 8:
+            elif dist_from_ema20_pct > ext_thresholds[1]:
                 penalty = -10
                 penalties.append(f"Extended {dist_from_ema20_pct:.1f}% above 20EMA (-10)")
-            elif dist_from_ema20_pct > 5:
+            elif dist_from_ema20_pct > ext_thresholds[2]:
                 penalty = -5
                 penalties.append(f"Slightly extended {dist_from_ema20_pct:.1f}% above 20EMA (-5)")
             else:
                 penalty = 0
             score += penalty
+
+            # Penalty (Small Cap Only): THIN SPREAD — reject low avg volume
+            if args.universe == "small" and avg_vol_20 < 500000:
+                thin_penalty = -10
+                penalties.append(f"Thin spread (avg vol {avg_vol_20/1e6:.1f}M < 500K) (-10)")
+                score += thin_penalty
 
             # Penalty 2: LOW VOLUME on breakout — strongest false breakout filter
             if score >= 40 and vol_ratio < 1.0:

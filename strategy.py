@@ -159,6 +159,11 @@ class ORBBreakoutStrategy:
 
         # SHORT breakout
         elif candle.close < orb_l and candle.volume >= self.cfg.min_volume and candle.close < vwap:
+            day_loss = ((1 - candle.close / state["daily_open"])) * 100 if state["daily_open"] else 0
+            if day_loss > 8.0:
+                logger.warning(f"Rejected SHORT on {symbol}: price already down {day_loss:.1f}% (Near Lower Circuit limit).")
+                return None
+
             entry = candle.close
             sl = orb_h
             risk = sl - entry

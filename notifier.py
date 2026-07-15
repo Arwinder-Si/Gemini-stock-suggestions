@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 _client = httpx.Client(timeout=10.0)
 
 
-def send_webex_alert(signal: Signal, bot_token: str, room_id: str) -> None:
+def send_webex_alert(signal: Signal, bot_token: str, room_id: str, universe: str = "large") -> None:
     """
     Posts a formatted live trade signal to a Webex room.
 
@@ -50,8 +50,9 @@ def send_webex_alert(signal: Signal, bot_token: str, room_id: str) -> None:
             f"Time: {signal.timestamp}"
         )
     else:
+        univ_tag = "🎲 SMALL CAP" if universe == "small" else "📊 LARGE CAP"
         text = (
-            f"**🚨 ORB {signal.direction} SIGNAL**\n\n"
+            f"**🚨 ORB {signal.direction} SIGNAL [{univ_tag}]**\n\n"
             f"**Symbol:** {signal.symbol}\n\n"
             f"**Entry:** ₹{signal.entry:,.2f}\n\n"
             f"**Stop Loss:** ₹{signal.sl:,.2f}\n\n"

@@ -57,7 +57,7 @@ def strategy_worker(q: queue.Queue, stop_event: threading.Event, bot_token: str,
     orb_cfg_small = ORBConfig(
         orb_start=cfg.orb_start_time_parsed,
         orb_end=dt_time(9, 45),  # 30 min ORB
-        min_volume=cfg.min_volume_threshold * 2,  # Stricter volume
+        min_volume=max(50000, cfg.min_volume_threshold * 2),  # Absolute 50K floor for small caps
         rr_ratio=1.0,  # Always 1.0 for small caps to lock in quick profits
         exit_time=cfg.time_based_exit_parsed,
     )
@@ -82,7 +82,7 @@ def strategy_worker(q: queue.Queue, stop_event: threading.Event, bot_token: str,
                     sig.direction, sig.symbol, sig.timestamp, sig.entry, sig.sl, sig.tp
                 )
                 log_signal(sig)
-                send_webex_alert(sig, bot_token, room_id)
+                send_webex_alert(sig, bot_token, room_id, universe=univ)
         except Exception:
             logger.exception("Error in strategy worker processing candle")
         finally:

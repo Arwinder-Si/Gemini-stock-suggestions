@@ -21,7 +21,7 @@ def generate_trade_plan():
     out_file = "trade_plan_smallcap.json" if args.universe == "small" else "trade_plan.json"
     
     cfg = get_config()
-    top_n = cfg.screener_top_n
+    top_n = min(3, cfg.screener_top_n) if args.universe == "small" else cfg.screener_top_n
     
     if not os.path.exists(in_file):
         logger.error(f"{in_file} not found! Run comprehensive_screener.py first.")
