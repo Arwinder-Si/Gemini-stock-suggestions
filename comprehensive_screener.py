@@ -201,6 +201,12 @@ def run_screener():
     print(f"\nDownloading 1 year of daily data for {len(all_tickers)} stocks...")
     data = yf.download(all_tickers, period="1y", interval="1d", progress=True)
 
+    # If run during market hours, the last row is an incomplete daily candle. Drop it.
+    now = datetime.datetime.now()
+    if not data.empty and data.index[-1].date() == now.date() and now.time() < datetime.time(15, 30):
+        print("  [Note] Market is still open. Excluding today's incomplete daily candle.")
+        data = data.iloc[:-1]
+
     # Nifty 50 for relative strength and regime
     nifty_data = yf.download("^NSEI", period="1y", interval="1d", progress=False)
     if isinstance(nifty_data.columns, pd.MultiIndex):
