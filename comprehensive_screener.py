@@ -138,7 +138,31 @@ NIFTY_MIDCAP = [
     'ADANIGREEN', 'ADANIPOWER', 'TATAPOWER', 'TORNTPOWER', 'CESC', 'JSL',
 ]
 
-all_tickers_list = list(dict.fromkeys(NIFTY_LARGE + NIFTY_MIDCAP))
+SMALL_CAP = [
+    'HINDRECT', 'NUVOCO', 'HFCL', 'ITDC', 'SAJHOTELS',
+    'ZENITHEXPO', 'SUZLON', 'JPASSOCIAT', 'RPOWER', 'GTLINFRA',
+    'IDEA', 'YESBANK', 'UCOBANK', 'IOB', 'CENTRALBK',
+    'BANKINDIA', 'MAHABANK', 'PSB', 'J&KBANK', 'SOUTHBANK',
+    'KARURVYSYA', 'EQUITASBNK', 'UJJIVANSFB', 'SURYODAY', 'ESAFSFB',
+    'IRB', 'HCC', 'JETAIRWAYS', 'SPICEJET', 'TRIDENT',
+    'VAKRANGEE', 'PCJEWELLER', 'ALOKINDS', 'SINTEX', 'GVKPIL',
+    'RELCAPITAL', 'RCOM', 'ADANIPOWER', 'ADANIGREEN', 'AWL',
+    'NDTV', 'BSE', 'CDSL', 'CAMS', 'ANGELONE',
+    'MOTILALOFS', 'ISEC', 'UTIAMC', 'NAM-INDIA', 'NIPPON'
+]
+
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("--universe", choices=["large", "small"], default="large")
+args, unknown = parser.parse_known_args()
+
+if args.universe == "small":
+    all_tickers_list = list(dict.fromkeys(SMALL_CAP))
+    out_file = "screener_results_smallcap.csv"
+else:
+    all_tickers_list = list(dict.fromkeys(NIFTY_LARGE + NIFTY_MIDCAP))
+    out_file = "screener_results.csv"
+
 all_tickers = [t + ".NS" for t in all_tickers_list]
 
 # =============================================================================
@@ -271,13 +295,14 @@ def run_screener():
                 continue
 
             # ============================================================
-            # LIQUIDITY FILTER — reject if avg daily traded value < 5 crore
+            # LIQUIDITY FILTER — reject if avg daily traded value < threshold
             # ============================================================
             avg_price_20 = close.iloc[-20:].mean()
             avg_vol_20 = volume.iloc[-20:].mean()
             avg_traded_value_cr = (avg_price_20 * avg_vol_20) / 1e7  # in crores
 
-            if avg_traded_value_cr < 5:
+            liq_threshold = 1 if args.universe == "small" else 5
+            if avg_traded_value_cr < liq_threshold:
                 continue  # illiquid, skip entirely
 
             # ============================================================
@@ -536,8 +561,8 @@ def run_screener():
 
     # Save CSV (without breakdown dict for clean export)
     export_df = results_df.drop(columns=['Breakdown', 'Penalties'])
-    export_df.to_csv('screener_results.csv', index=True)
-    print(f"\nFull results saved to screener_results.csv ({len(results_df)} stocks)")
+    export_df.to_csv(out_file, index=True)
+    print(f"\nFull results saved to {out_file} ({len(results_df)} stocks)")
 
 
 if __name__ == "__main__":

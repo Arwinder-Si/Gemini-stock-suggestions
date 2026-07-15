@@ -59,15 +59,20 @@ def send_webex_message(markdown: str) -> bool:
         return False
 
 
-def build_evening_message() -> str:
+def build_evening_message(universe="large") -> str:
     """Build the evening screener results message."""
-    msg = "## 📊 NSE Breakout Screener — Evening Report\n\n"
+    title = "Large/Mid Cap" if universe == "large" else "Small Cap"
+    msg = f"## 📊 NSE Breakout Screener — {title} Report\n\n"
+    
+    if universe == "small":
+        msg += "⚠️ **DANGER ZONE:** Small caps are highly volatile. Expect wide bid-ask spreads and sudden fakeouts. Strictly adhere to risk limits.\n\n"
 
     # Load screener results
-    if not os.path.exists("screener_results.csv"):
-        return msg + "⚠️ No screener results found. Pipeline may have failed."
+    csv_file = "screener_results_smallcap.csv" if universe == "small" else "screener_results.csv"
+    if not os.path.exists(csv_file):
+        return msg + f"⚠️ No {csv_file} found. Pipeline may have failed."
 
-    df = pd.read_csv("screener_results.csv")
+    df = pd.read_csv(csv_file)
 
     if df.empty:
         return msg + "No stocks scored above 50/100 today. **No trades tomorrow.**"
@@ -119,13 +124,17 @@ def build_evening_message() -> str:
     return msg
 
 
-def build_morning_message() -> str:
+def build_morning_message(universe="large") -> str:
     """Build the pre-market reminder with today's trade plan and global context."""
     import datetime
     import yfinance as yf
     
     today_str = datetime.datetime.now().strftime("%B %d, %Y")
-    msg = f"## ☀️ PRE-MARKET BRIEFING ({today_str})\n\n"
+    title = "Large/Mid Cap" if universe == "large" else "Small Cap"
+    msg = f"## ☀️ PRE-MARKET BRIEFING ({today_str}) - {title}\n\n"
+
+    if universe == "small":
+        msg += "⚠️ **DANGER ZONE:** Small caps are highly volatile. Expect wide bid-ask spreads and sudden fakeouts. Strictly adhere to risk limits.\n\n"
 
     # 1. Add Global Signals Context
     import market_db
@@ -161,11 +170,14 @@ def build_morning_message() -> str:
 
     # 2. Add Trade Plan with Setup Details
     msg += "**🎯 TODAY'S TRADE PLAN & SETUPS**\n\n"
-    if not os.path.exists("trade_plan.json") or not os.path.exists("screener_results.csv"):
-        msg += "⚠️ No trade plan found. Run the evening pipeline first.\n\n"
+    plan_file = "trade_plan_smallcap.json" if universe == "small" else "trade_plan.json"
+    csv_file = "screener_results_smallcap.csv" if universe == "small" else "screener_results.csv"
+    
+    if not os.path.exists(plan_file) or not os.path.exists(csv_file):
+        msg += f"⚠️ No {plan_file} found. Run the evening pipeline first.\n\n"
     else:
         try:
-            sdf = pd.read_csv("screener_results.csv")
+            sdf = pd.read_csv(csv_file)
             
             # Separate >= 70 (Trade Plan) and 60-69 (Watchlist)
             trade_plan = sdf[sdf['Score'] >= 70].copy()
@@ -338,14 +350,19 @@ if __name__ == "__main__":
     mode = sys.argv[1].lower()
 
     if mode == "evening":
-        msg = build_evening_message()
+        for univ in ["large", "small"]:
+            msg = build_evening_message(universe=univ)
+            print(f"\n--- Message Preview ({univ}) ---\n{msg}\n--- End Preview ---\n")
+            send_webex_message(msg)
     elif mode == "morning":
-        msg = build_morning_message()
+        for univ in ["large", "small"]:
+            msg = build_morning_message(universe=univ)
+            print(f"\n--- Message Preview ({univ}) ---\n{msg}\n--- End Preview ---\n")
+            send_webex_message(msg)
     elif mode == "pnl":
         msg = build_pnl_message()
+        print(f"\n--- Message Preview ---\n{msg}\n--- End Preview ---\n")
+        send_webex_message(msg)
     else:
         print("Invalid mode. Use 'evening', 'morning', or 'pnl'.")
         sys.exit(1)
-
-    print(f"\n--- Message Preview ---\n{msg}\n--- End Preview ---\n")
-    send_webex_message(msg)

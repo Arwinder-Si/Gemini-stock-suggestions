@@ -61,6 +61,9 @@ class ORBBreakoutStrategy:
         state["cum_typ_price_vol"] += typ_price * candle.volume
         if state["cum_vol"] > 0:
             state["vwap"] = state["cum_typ_price_vol"] / state["cum_vol"]
+            
+        if state["daily_open"] is None:
+            state["daily_open"] = candle.open
 
         # ── Inside the ORB window ──
         if self.cfg.orb_start <= time_obj <= self.cfg.orb_end:
@@ -138,6 +141,11 @@ class ORBBreakoutStrategy:
 
         # LONG breakout
         if candle.close > orb_h and candle.volume >= self.cfg.min_volume and candle.close > vwap:
+            day_gain = ((candle.close / state["daily_open"]) - 1) * 100 if state["daily_open"] else 0
+            if day_gain > 8.0:
+                logger.warning(f"Rejected LONG on {symbol}: price already up {day_gain:.1f}% (Near Upper Circuit limit).")
+                return None
+                
             entry = candle.close
             sl = orb_l
             risk = entry - sl
@@ -177,6 +185,7 @@ class ORBBreakoutStrategy:
         if symbol not in self._state or self._state[symbol]["date"] != date_str:
             self._state[symbol] = {
                 "date": date_str,
+                "daily_open": None,
                 "orb_high": None,
                 "orb_low": None,
                 "signal_fired": False,
