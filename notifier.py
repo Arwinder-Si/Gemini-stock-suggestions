@@ -30,16 +30,36 @@ def send_webex_alert(signal: Signal, bot_token: str, room_id: str) -> None:
 
     url = "https://webexapis.com/v1/messages"
 
-    text = (
-        f"**🚨 ORB {signal.direction} SIGNAL**\n\n"
-        f"**Symbol:** {signal.symbol}\n\n"
-        f"**Entry:** ₹{signal.entry:,.2f}\n\n"
-        f"**Stop Loss:** ₹{signal.sl:,.2f}\n\n"
-        f"**Take Profit:** ₹{signal.tp:,.2f}\n\n"
-        f"---\n\n"
-        f"Reason: {signal.reason}\n\n"
-        f"Time: {signal.timestamp}"
-    )
+    if signal.direction == "UPDATE_SL":
+        text = (
+            f"**🛡️ TRAILING STOP ALERT: {signal.symbol}**\n\n"
+            f"**Action:** Move Stop Loss to Breakeven\n\n"
+            f"**New Stop Loss:** ₹{signal.sl:,.2f}\n\n"
+            f"---\n\n"
+            f"Reason: {signal.reason}\n\n"
+            f"Time: {signal.timestamp}"
+        )
+    elif signal.direction == "EXIT":
+        emoji = "🟢" if signal.pnl_pct > 0 else "🔴"
+        text = (
+            f"**🛑 TRADE CLOSED: {signal.symbol}**\n\n"
+            f"**Exit Price:** ₹{signal.entry:,.2f}\n\n"
+            f"**Net PnL:** {emoji} {signal.pnl_pct:+.2f}%\n\n"
+            f"---\n\n"
+            f"Reason: {signal.reason}\n\n"
+            f"Time: {signal.timestamp}"
+        )
+    else:
+        text = (
+            f"**🚨 ORB {signal.direction} SIGNAL**\n\n"
+            f"**Symbol:** {signal.symbol}\n\n"
+            f"**Entry:** ₹{signal.entry:,.2f}\n\n"
+            f"**Stop Loss:** ₹{signal.sl:,.2f}\n\n"
+            f"**Take Profit:** ₹{signal.tp:,.2f}\n\n"
+            f"---\n\n"
+            f"Reason: {signal.reason}\n\n"
+            f"Time: {signal.timestamp}"
+        )
 
     headers = {
         "Authorization": f"Bearer {bot_token}",

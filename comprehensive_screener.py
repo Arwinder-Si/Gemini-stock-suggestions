@@ -219,6 +219,8 @@ def run_screener():
     # --- Market Regime ---
     regime, regime_modifier = get_market_regime(nifty_close)
     print(f"\n  Market Regime: {regime} (score modifier: {regime_modifier:+d})")
+    with open("market_regime.txt", "w") as f:
+        f.write(regime)
 
     # --- Fetch India VIX ---
     vix_data = yf.download("^INDIAVIX", period="5d", interval="1d", progress=False)

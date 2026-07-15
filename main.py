@@ -52,11 +52,22 @@ def strategy_worker(
     """Consumes candles from the queue and runs ORB strategy logic."""
 
     cfg = get_config()
+    
+    # Dynamic RR ratio based on regime
+    rr_ratio = cfg.risk_reward_ratio
+    import os
+    if os.path.exists("market_regime.txt"):
+        with open("market_regime.txt", "r") as f:
+            regime = f.read().strip()
+            if "BEAR" in regime or "NEUTRAL" in regime:
+                rr_ratio = 1.0
+                logger.info(f"Market Regime is {regime}. Scaling down RR target from {cfg.risk_reward_ratio} to 1.0.")
+    
     orb_cfg = ORBConfig(
         orb_start=cfg.orb_start_time_parsed,
         orb_end=cfg.orb_end_time_parsed,
         min_volume=cfg.min_volume_threshold,
-        rr_ratio=cfg.risk_reward_ratio,
+        rr_ratio=rr_ratio,
         exit_time=cfg.time_based_exit_parsed,
     )
     strategy = ORBBreakoutStrategy(orb_cfg)
