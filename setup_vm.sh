@@ -33,6 +33,7 @@ cat << 'EOF' > run_evening.sh
 #!/bin/bash
 cd "$(dirname "$0")"
 source venv/bin/activate
+python update_security_ids.py
 python news_sentiment.py
 python comprehensive_screener.py
 python intraday_trigger.py
