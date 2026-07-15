@@ -215,8 +215,17 @@ def build_morning_message(universe="large") -> str:
 
     msg += "---\n\n"
     msg += "**⏰ TRADING PLAYBOOK**\n\n"
-    msg += "**9:15 – 9:30 AM** (Observation Phase)\nLet the 15-min ORB candle form. DO NOT TRADE.\n\n"
-    msg += "**9:30 – 9:45 AM** (Primary Entry Window)\n🟢 Watch for price to break above the ORB high with volume.\n\n"
+    if universe == "small":
+        msg += "**9:15 – 9:45 AM** (Observation Phase)\n"
+        msg += "Let the 30-min ORB candle form. DO NOT TRADE.\n\n"
+        msg += "**9:45 – 10:15 AM** (Primary Entry Window)\n"
+        msg += "🟢 Watch for price to break above the 30m ORB high with massive volume (>3.0x).\n\n"
+    else:
+        msg += "**9:15 – 9:30 AM** (Observation Phase)\n"
+        msg += "Let the 15-min ORB candle form. DO NOT TRADE.\n\n"
+        msg += "**9:30 – 9:45 AM** (Primary Entry Window)\n"
+        msg += "🟢 Watch for price to break above the ORB high with volume.\n\n"
+        
     msg += "**10:30 – 11:30 AM** (Defense Phase)\n🛡️ Start trailing stops to breakeven.\n\n"
     msg += "**11:30 AM+** (Exit Zone)\n🛑 No new entries. Let runners hit TP or trailing SL.\n\n"
 
