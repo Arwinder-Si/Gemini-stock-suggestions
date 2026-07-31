@@ -3,6 +3,8 @@ Project: NSE Intraday ORB Signal & Alert System
 Prepared for: Arwinder Singh
 Target build environment: Antigravity (Gemini)
 Date: July 2026
+
+For the phased plan to evolve this system into an autonomous trading agent, see docs/AUTONOMOUS_AGENT_ROADMAP.md.
 ---
 1. Executive Summary
 This document specifies the design of a Python-based intraday trading signal system for NSE equities, built around the DhanHQ broker API. The system ingests live market data via WebSocket, aggregates ticks into OHLCV candles, evaluates rule-based strategies (starting with Opening Range Breakout — ORB), and pushes trade signals to Telegram. It includes a companion backtesting engine that reuses the exact same strategy code used in live trading, and is designed to scale from a single strategy to multiple concurrent strategies via a producer-consumer queue architecture.
