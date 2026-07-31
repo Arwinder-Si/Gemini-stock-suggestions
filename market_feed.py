@@ -16,6 +16,7 @@ import time
 from datetime import datetime
 from queue import Full, Queue
 
+from clock import now_ist
 from models import Candle
 
 logger = logging.getLogger(__name__)
@@ -131,6 +132,8 @@ class MarketFeedProducer:
         security_ids: list[str],
         strategy_queues: list[Queue],
         security_id_to_name: dict[str, str] | None = None,
+        *,
+        feed_gap_warn_secs: float = 120.0,
     ) -> None:
         self._client_id = client_id
         self._access_token = access_token
@@ -141,6 +144,10 @@ class MarketFeedProducer:
         self._aggregator = CandleAggregator(cumulative_volume=True)
         self._is_running = False
         self._backoff = self.INITIAL_BACKOFF_SECS
+
+        # Feed-gap detection: last-seen tick time per security_id
+        self._last_tick_time: dict[str, datetime] = {}
+        self._feed_gap_warn_secs = feed_gap_warn_secs
 
     # ── Public API ───────────────────────────────────────────────────
 
@@ -226,7 +233,33 @@ class MarketFeedProducer:
                 message.get("volume", message.get("LTQ", message.get("last_trade_quantity", 0)))
             )
 
-            tick_time = datetime.now()
+            # Prefer exchange LTT from Quote packet; fall back to local IST clock
+            ltt_raw = message.get("LTT") or message.get("last_trade_time")
+            if ltt_raw:
+                try:
+                    if isinstance(ltt_raw, (int, float)):
+                        tick_time = datetime.fromtimestamp(ltt_raw / 1000)
+                    else:
+                        tick_time = datetime.fromisoformat(str(ltt_raw))
+                except (ValueError, TypeError, OSError):
+                    tick_time = now_ist()
+                    logger.debug("LTT parse failed for %s, falling back to local clock", sec_id)
+            else:
+                tick_time = now_ist()
+
+            # Feed-gap detection per symbol
+            prev_tick = self._last_tick_time.get(sec_id)
+            self._last_tick_time[sec_id] = tick_time
+            if prev_tick is not None:
+                gap_secs = (tick_time - prev_tick).total_seconds()
+                if gap_secs > self._feed_gap_warn_secs:
+                    name = self._id_to_name.get(sec_id, sec_id)
+                    logger.warning(
+                        "Feed gap detected for %s: %.0fs since last tick",
+                        name,
+                        gap_secs,
+                    )
+
             finalized = self._aggregator.process_tick(sec_id, tick_time, ltp, volume)
 
             if finalized:

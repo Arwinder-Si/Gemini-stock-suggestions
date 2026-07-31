@@ -23,6 +23,7 @@ import pandas as pd
 import numpy as np
 import warnings
 import datetime
+from clock import now_ist
 
 warnings.filterwarnings('ignore')
 
@@ -252,7 +253,7 @@ def get_market_regime(nifty_close):
 def run_screener():
     print("=" * 70)
     print(f"  NSE ADVANCED BREAKOUT SCREENER v3.0")
-    print(f"  Scanning {len(all_tickers)} stocks | {datetime.datetime.now().strftime('%d-%b-%Y %H:%M')}")
+    print(f"  Scanning {len(all_tickers)} stocks | {now_ist().strftime('%d-%b-%Y %H:%M')}")
     print("=" * 70)
 
     # --- Download data ---
@@ -260,7 +261,7 @@ def run_screener():
     data = yf.download(all_tickers, period="1y", interval="1d", progress=True)
 
     # If run during market hours, the last row is an incomplete daily candle. Drop it.
-    now = datetime.datetime.now()
+    now = now_ist()
     if not data.empty and data.index[-1].date() == now.date() and now.time() < datetime.time(15, 30):
         print("  [Note] Market is still open. Excluding today's incomplete daily candle.")
         data = data.iloc[:-1]
@@ -308,6 +309,8 @@ def run_screener():
     else:
         print("  News features not found. Running pure technicals.")
 
+from scoring import score_stock, ScoreInput
+
     # --- Score each stock ---
     results = []
 
@@ -318,242 +321,49 @@ def run_screener():
             high = data['High'][ticker].dropna()
             low = data['Low'][ticker].dropna()
 
-            if len(close) < 60 or len(volume) < 60:
-                continue
-
             name = ticker.replace('.NS', '')
-            current_close = close.iloc[-1]
-
-            # Skip penny stocks (stricter floor for small caps)
-            penny_floor = 100 if args.universe == "small" else 50
-            if current_close < penny_floor:
-                continue
-
-            # ============================================================
-            # LIQUIDITY FILTER — reject if avg daily traded value < threshold
-            # ============================================================
-            avg_price_20 = close.iloc[-20:].mean()
-            avg_vol_20 = volume.iloc[-20:].mean()
-            avg_traded_value_cr = (avg_price_20 * avg_vol_20) / 1e7  # in crores
-
-            liq_threshold = 1 if args.universe == "small" else 5
-            if avg_traded_value_cr < liq_threshold:
-                continue  # illiquid, skip entirely
-
-            # ============================================================
-            # SCORING — 5 factors, each 0-20 pts, plus environment modifier
-            # ============================================================
-            breakdown = {}  # factor_name -> (points, explanation)
-            score = 0
-
-            # --- Factor 1: VOLUME SURGE (0-20 pts) ---
-            today_vol = volume.iloc[-1]
-            vol_ratio = today_vol / avg_vol_20 if avg_vol_20 > 0 else 0
-
-            # Non-linear graduated scoring
-            if vol_ratio >= 3.0:
-                pts = 20
-            elif vol_ratio >= 2.0:
-                pts = 15
-            elif vol_ratio >= 1.5:
-                pts = 10
-            elif vol_ratio >= 1.2:
-                pts = 5
-            else:
-                pts = 0
-            score += pts
-            breakdown['Volume'] = (pts, f"{vol_ratio:.1f}x avg")
-
-            # --- Factor 2: CONSOLIDATION BREAKOUT via ATR (0-20 pts) ---
-            atr = compute_atr(high, low, close, 14)
-            if len(atr.dropna()) >= 20:
-                current_atr = atr.iloc[-1]
-                avg_atr_prev = atr.iloc[-21:-1].mean()
-
-                # ATR expansion ratio: current ATR vs recent average
-                atr_ratio = current_atr / avg_atr_prev if avg_atr_prev > 0 else 1
-
-                # Also check if price broke above 20-day high
-                high_20 = close.iloc[-21:-1].max()
-                broke_above = current_close > high_20
-
-                if broke_above and atr_ratio >= 1.5:
-                    pts = 20
-                    tag = f"ATR expansion {atr_ratio:.1f}x + 20d high break"
-                elif broke_above and atr_ratio >= 1.2:
-                    pts = 15
-                    tag = f"ATR expansion {atr_ratio:.1f}x + 20d high break"
-                elif broke_above:
-                    pts = 10
-                    tag = f"20d high break"
-                elif atr_ratio >= 1.5:
-                    pts = 5
-                    tag = f"ATR expanding {atr_ratio:.1f}x (no price break yet)"
-                else:
-                    pts = 0
-                    tag = "No breakout"
-            else:
-                pts = 0
-                tag = "Insufficient ATR data"
-
-            score += pts
-            breakdown['Consolidation'] = (pts, tag)
-
-            # --- Factor 3: RELATIVE STRENGTH vs NIFTY (0-20 pts) ---
-            if len(close) >= 10:
-                stock_10d_return = (close.iloc[-1] / close.iloc[-10] - 1) * 100
-                rs_diff = stock_10d_return - nifty_10d_return
-
-                if rs_diff >= 5:
-                    pts = 20
-                elif rs_diff >= 3:
-                    pts = 15
-                elif rs_diff >= 1:
-                    pts = 10
-                elif rs_diff >= 0:
-                    pts = 5
-                else:
-                    pts = 0
-                score += pts
-                breakdown['Rel Strength'] = (pts, f"{rs_diff:+.1f}% vs Nifty 10d")
-            else:
-                breakdown['Rel Strength'] = (0, "N/A")
-
-            # --- Factor 4: TREND ALIGNMENT (0-20 pts) ---
-            ema_10 = close.ewm(span=10, adjust=False).mean().iloc[-1]
-            ema_20 = close.ewm(span=20, adjust=False).mean().iloc[-1]
-            ema_50 = close.ewm(span=50, adjust=False).mean().iloc[-1]
-
-            if current_close > ema_10 > ema_20 > ema_50:
-                pts = 20
-                tag = "Perfect stack (P>10>20>50)"
-            elif current_close > ema_20 > ema_50:
-                pts = 15
-                tag = "Good (P>20>50)"
-            elif current_close > ema_50:
-                pts = 10
-                tag = "Above 50 EMA"
-            elif current_close > ema_20:
-                pts = 5
-                tag = "Above 20 EMA only"
-            else:
-                pts = 0
-                tag = "Bearish alignment"
-
-            score += pts
-            breakdown['EMA Trend'] = (pts, tag)
-
-            # --- Factor 5: MOMENTUM / RSI (0-20 pts) ---
-            rsi = compute_rsi(close, 14)
-            rsi_val = rsi.iloc[-1]
-
-            if 55 <= rsi_val <= 70:
-                pts = 20
-                tag = f"Sweet spot ({rsi_val:.0f})"
-            elif 50 <= rsi_val < 55:
-                pts = 15
-                tag = f"Neutral-bull ({rsi_val:.0f})"
-            elif 40 <= rsi_val < 50:
-                pts = 10
-                tag = f"Neutral ({rsi_val:.0f})"
-            elif rsi_val > 70:
-                pts = 5
-                tag = f"Overbought ({rsi_val:.0f}) WARN"
-            else:
-                pts = 0
-                tag = f"Weak ({rsi_val:.0f})"
-
-            score += pts
-            breakdown['RSI'] = (pts, tag)
-
-            # ============================================================
-            # PENALTIES
-            # ============================================================
-            penalties = []
-
-            # Penalty 1: OVEREXTENSION — distance from 20 EMA
-            # Small caps get stricter thresholds (they reverse faster)
-            dist_from_ema20_pct = (current_close - ema_20) / ema_20 * 100
-            if args.universe == "small":
-                ext_thresholds = (8, 5, 3)  # Stricter for small caps
-            else:
-                ext_thresholds = (12, 8, 5)  # Standard for large caps
-
-            if dist_from_ema20_pct > ext_thresholds[0]:
-                penalty = -15
-                penalties.append(f"Overextended {dist_from_ema20_pct:.1f}% above 20EMA (-15)")
-            elif dist_from_ema20_pct > ext_thresholds[1]:
-                penalty = -10
-                penalties.append(f"Extended {dist_from_ema20_pct:.1f}% above 20EMA (-10)")
-            elif dist_from_ema20_pct > ext_thresholds[2]:
-                penalty = -5
-                penalties.append(f"Slightly extended {dist_from_ema20_pct:.1f}% above 20EMA (-5)")
-            else:
-                penalty = 0
-            score += penalty
-
-            # Penalty (Small Cap Only): THIN SPREAD — reject low avg volume
-            if args.universe == "small" and avg_vol_20 < 500000:
-                thin_penalty = -10
-                penalties.append(f"Thin spread (avg vol {avg_vol_20/1e6:.1f}M < 500K) (-10)")
-                score += thin_penalty
-
-            # Penalty 2: LOW VOLUME on breakout — strongest false breakout filter
-            if score >= 40 and vol_ratio < 1.0:
-                vol_penalty = -15
-                penalties.append(f"LOW VOLUME ({vol_ratio:.1f}x) on breakout (-15)")
-                score += vol_penalty
-
-            # ============================================================
-            # NEWS SENTIMENT ADJUSTMENT
-            # ============================================================
+            
+            sentiment_7d = 0.0
+            has_reg_risk = False
             if not news_df.empty and name in news_df.index:
                 news_row = news_df.loc[name]
-                sent_7d = news_row.get('sentiment_7d', 0.0)
-                
-                # Map [-1, 1] to [-10, +10]
-                news_pts = int(sent_7d * 10)
-                
-                # Hard filters
-                has_reg_risk = news_row.get('has_neg_reg_news_7d', False)
-                if has_reg_risk:
-                    penalties.append("REGULATORY RISK (Capped at 60)")
-                
-                if sent_7d <= -0.5:
-                    penalties.append(f"HIGHLY NEGATIVE SENTIMENT ({sent_7d:.2f}) - BLOCKED")
-                    score = 0  # Block breakout
-                else:
-                    if news_pts != 0:
-                        breakdown['News'] = (news_pts, f"Sentiment {sent_7d:.2f}")
-                        score += news_pts
-                        
-                # Apply regime modifier and clamp
-                score += total_env_modifier
-                if has_reg_risk:
-                    score = min(score, 60)
-            else:
-                score += total_env_modifier
+                sentiment_7d = float(news_row.get('sentiment_7d', 0.0))
+                has_reg_risk = bool(news_row.get('has_neg_reg_news_7d', False))
 
-            # Clamp score to 0-100
-            score = max(0, min(100, score))
+            inp = ScoreInput(
+                symbol=name,
+                close=close,
+                high=high,
+                low=low,
+                volume=volume,
+                nifty_10d_return=nifty_10d_return,
+                total_env_modifier=total_env_modifier,
+                universe=args.universe,
+                sentiment_7d=sentiment_7d,
+                has_reg_risk=has_reg_risk,
+            )
 
-            # Only include stocks scoring 50+
-            if score >= 50:
+            res = score_stock(inp)
+
+            if res.passed_filters:
+                current_close = close.iloc[-1]
+                ema_20 = close.ewm(span=20, adjust=False).mean().iloc[-1]
+                dist_from_ema20_pct = (current_close - ema_20) / ema_20 * 100
                 sector = SECTOR_MAP.get(name, 'Other')
                 results.append({
                     'Stock': name,
                     'Sector': sector,
-                    'Close': round(current_close, 2),
-                    'Score': score,
-                    'Vol_Ratio': round(vol_ratio, 1),
-                    'RSI': round(rsi_val, 0),
-                    'Liq_Cr': round(avg_traded_value_cr, 1),
-                    'Dist_EMA20': round(dist_from_ema20_pct, 1),
-                    'Breakdown': breakdown,
-                    'Penalties': penalties,
+                    'Close': res.current_close,
+                    'Score': res.score,
+                    'Vol_Ratio': res.vol_ratio,
+                    'RSI': res.rsi_val,
+                    'Liq_Cr': res.avg_traded_value_cr,
+                    'Dist_EMA20': round(float(dist_from_ema20_pct), 1),
+                    'Breakdown': res.factor_breakdown,
+                    'Penalties': res.penalties,
                 })
 
-        except Exception:
+        except Exception as e:
             pass
 
     # =========================================================================
@@ -561,6 +371,9 @@ def run_screener():
     # =========================================================================
     if not results:
         print("\nNo stocks scored above 50/100 today.")
+        empty_df = pd.DataFrame(columns=['Stock', 'Sector', 'Close', 'Score', 'Vol_Ratio', 'RSI', 'Liq_Cr', 'Dist_EMA20'])
+        empty_df.to_csv(out_file, index=False)
+        print(f"Empty results written to {out_file}.")
         return
 
     results_df = pd.DataFrame(results)

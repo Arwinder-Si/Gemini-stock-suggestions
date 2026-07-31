@@ -50,26 +50,26 @@ class TestORBWindow:
 
 class TestLongSignal:
     def test_long_breakout(self, strategy: ORBBreakoutStrategy):
-        # Build ORB: high=110, low=95
-        strategy.on_candle(Candle(SYM, "2023-10-10 09:15:00", 100, 105, 95, 102, 500))
-        strategy.on_candle(Candle(SYM, "2023-10-10 09:30:00", 102, 110, 100, 108, 500))
+        # Build ORB: high=105, low=98
+        strategy.on_candle(Candle(SYM, "2023-10-10 09:15:00", 100, 103, 98, 102, 500))
+        strategy.on_candle(Candle(SYM, "2023-10-10 09:30:00", 102, 105, 100, 104, 500))
 
-        # Breakout candle
-        sig = strategy.on_candle(Candle(SYM, "2023-10-10 09:35:00", 108, 115, 107, 112, 1500))
+        # Breakout candle: close 106 (+6% from open)
+        sig = strategy.on_candle(Candle(SYM, "2023-10-10 09:35:00", 104, 107, 103, 106, 1500))
 
         assert sig is not None
         assert sig.direction == "LONG"
-        assert sig.entry == 112
-        assert sig.sl == 95
-        assert sig.tp == 112 + (112 - 95)  # 129.0
+        assert sig.entry == 106
+        assert sig.sl == 98
+        assert sig.tp == 106 + (106 - 98)  # 114.0
 
     def test_no_re_entry_after_long(self, strategy: ORBBreakoutStrategy):
-        strategy.on_candle(Candle(SYM, "2023-10-10 09:15:00", 100, 105, 95, 102, 500))
-        strategy.on_candle(Candle(SYM, "2023-10-10 09:30:00", 102, 110, 100, 108, 500))
-        strategy.on_candle(Candle(SYM, "2023-10-10 09:35:00", 108, 115, 107, 112, 1500))
+        strategy.on_candle(Candle(SYM, "2023-10-10 09:15:00", 100, 103, 98, 102, 500))
+        strategy.on_candle(Candle(SYM, "2023-10-10 09:30:00", 102, 105, 100, 104, 500))
+        strategy.on_candle(Candle(SYM, "2023-10-10 09:35:00", 104, 107, 103, 106, 1500))
 
         # Second breakout should be ignored
-        sig = strategy.on_candle(Candle(SYM, "2023-10-10 09:40:00", 112, 120, 110, 118, 1500))
+        sig = strategy.on_candle(Candle(SYM, "2023-10-10 09:40:00", 106, 109, 105, 108, 1500))
         assert sig is None
 
 
@@ -115,24 +115,24 @@ class TestRejections:
 class TestMultiSymbolMultiDay:
     def test_per_symbol_state_is_independent(self, strategy: ORBBreakoutStrategy):
         # Build ORB for SYM_A
-        strategy.on_candle(Candle("A", "2023-10-10 09:15:00", 100, 110, 90, 105, 500))
+        strategy.on_candle(Candle("A", "2023-10-10 09:15:00", 100, 103, 98, 102, 500))
         # Build ORB for SYM_B
-        strategy.on_candle(Candle("B", "2023-10-10 09:15:00", 200, 220, 190, 210, 500))
+        strategy.on_candle(Candle("B", "2023-10-10 09:15:00", 200, 205, 195, 202, 500))
 
         # Breakout A — should not affect B's state
-        sig_a = strategy.on_candle(Candle("A", "2023-10-10 09:35:00", 108, 115, 107, 112, 1500))
+        sig_a = strategy.on_candle(Candle("A", "2023-10-10 09:35:00", 102, 107, 101, 105, 1500))
         assert sig_a is not None
         assert sig_a.symbol == "A"
         assert strategy._state["B"]["signal_fired"] is False
 
     def test_new_day_resets_per_symbol(self, strategy: ORBBreakoutStrategy):
         # Day 1 signal
-        strategy.on_candle(Candle(SYM, "2023-10-10 09:15:00", 100, 110, 90, 105, 500))
-        sig1 = strategy.on_candle(Candle(SYM, "2023-10-10 09:35:00", 108, 115, 107, 112, 1500))
+        strategy.on_candle(Candle(SYM, "2023-10-10 09:15:00", 100, 103, 98, 102, 500))
+        sig1 = strategy.on_candle(Candle(SYM, "2023-10-10 09:35:00", 102, 107, 101, 105, 1500))
         assert sig1 is not None
 
         # Day 2 — should be able to fire again
-        strategy.on_candle(Candle(SYM, "2023-10-11 09:15:00", 200, 220, 190, 210, 500))
-        sig2 = strategy.on_candle(Candle(SYM, "2023-10-11 09:35:00", 218, 225, 217, 222, 1500))
+        strategy.on_candle(Candle(SYM, "2023-10-11 09:15:00", 200, 205, 195, 202, 500))
+        sig2 = strategy.on_candle(Candle(SYM, "2023-10-11 09:35:00", 202, 209, 201, 207, 1500))
         assert sig2 is not None
-        assert sig2.entry == 222
+        assert sig2.entry == 207

@@ -23,6 +23,7 @@ import re
 import time
 import warnings
 from datetime import datetime, timedelta, timezone
+from clock import now_ist
 
 import pandas as pd
 import yfinance as yf
@@ -365,7 +366,7 @@ def run_pipeline(tickers: list[str] | None = None):
 
     print("=" * 70)
     print(f"  NEWS-SENTIMENT PIPELINE")
-    print(f"  Scanning {len(tickers)} stocks | {datetime.now().strftime('%d-%b-%Y %H:%M')}")
+    print(f"  Scanning {len(tickers)} stocks | {now_ist().strftime('%d-%b-%Y %H:%M')}")
     print("=" * 70)
 
     engine = SentimentEngine()

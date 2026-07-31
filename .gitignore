@@ -32,3 +32,12 @@ Thumbs.db
 
 # Gemini agent files
 .agents/
+
+# SQLite operational database (regenerated)
+market_data.db
+
+# Parquet candle cache (large, local-only)
+data/
+
+# Agent kill switch sentinel
+KILL_SWITCH

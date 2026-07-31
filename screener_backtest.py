@@ -86,6 +86,8 @@ def compute_atr(high, low, close, period=14):
     return tr.rolling(window=period).mean()
 
 
+from scoring import score_stock, ScoreInput
+
 def score_stock_on_day(close_series, volume_series, high_series, low_series,
                        day_idx, nifty_close_series, nifty_day_idx):
     """
@@ -93,7 +95,6 @@ def score_stock_on_day(close_series, volume_series, high_series, low_series,
     Uses only data available up to and including day_idx (no lookahead).
     Returns the score (int) or None if the stock should be filtered out.
     """
-    # Need at least 60 bars of history before this day
     if day_idx < 60:
         return None
 
@@ -102,105 +103,22 @@ def score_stock_on_day(close_series, volume_series, high_series, low_series,
     high = high_series.iloc[:day_idx + 1]
     low = low_series.iloc[:day_idx + 1]
 
-    current_close = close.iloc[-1]
-    if current_close < 50:
-        return None
-
-    # Liquidity filter
-    avg_price_20 = close.iloc[-20:].mean()
-    avg_vol_20 = volume.iloc[-20:].mean()
-    avg_traded_value_cr = (avg_price_20 * avg_vol_20) / 1e7
-    if avg_traded_value_cr < 5:
-        return None
-
-    score = 0
-
-    # Factor 1: Volume surge
-    today_vol = volume.iloc[-1]
-    vol_ratio = today_vol / avg_vol_20 if avg_vol_20 > 0 else 0
-    if vol_ratio >= 3.0:
-        score += 20
-    elif vol_ratio >= 2.0:
-        score += 15
-    elif vol_ratio >= 1.5:
-        score += 10
-    elif vol_ratio >= 1.2:
-        score += 5
-
-    # Factor 2: ATR consolidation breakout
-    atr = compute_atr(high, low, close, 14)
-    if len(atr.dropna()) >= 20:
-        current_atr = atr.iloc[-1]
-        avg_atr_prev = atr.iloc[-21:-1].mean()
-        atr_ratio = current_atr / avg_atr_prev if avg_atr_prev > 0 else 1
-        high_20 = close.iloc[-21:-1].max()
-        broke_above = current_close > high_20
-
-        if broke_above and atr_ratio >= 1.5:
-            score += 20
-        elif broke_above and atr_ratio >= 1.2:
-            score += 15
-        elif broke_above:
-            score += 10
-        elif atr_ratio >= 1.5:
-            score += 5
-
-    # Factor 3: Relative strength vs Nifty
     nifty_slice = nifty_close_series.iloc[:nifty_day_idx + 1]
-    if len(close) >= 10 and len(nifty_slice) >= 10:
-        stock_10d = (close.iloc[-1] / close.iloc[-10] - 1) * 100
-        nifty_10d = (nifty_slice.iloc[-1] / nifty_slice.iloc[-10] - 1) * 100
-        rs_diff = stock_10d - nifty_10d
-        if rs_diff >= 5:
-            score += 20
-        elif rs_diff >= 3:
-            score += 15
-        elif rs_diff >= 1:
-            score += 10
-        elif rs_diff >= 0:
-            score += 5
+    nifty_10d = (nifty_slice.iloc[-1] / nifty_slice.iloc[-10] - 1) * 100 if len(nifty_slice) >= 10 else 0.0
 
-    # Factor 4: EMA trend alignment
-    ema_10 = close.ewm(span=10, adjust=False).mean().iloc[-1]
-    ema_20 = close.ewm(span=20, adjust=False).mean().iloc[-1]
-    ema_50 = close.ewm(span=50, adjust=False).mean().iloc[-1]
+    inp = ScoreInput(
+        symbol="SYM",
+        close=close,
+        high=high,
+        low=low,
+        volume=volume,
+        nifty_10d_return=nifty_10d,
+        total_env_modifier=0,
+        universe="large",
+    )
 
-    if current_close > ema_10 > ema_20 > ema_50:
-        score += 20
-    elif current_close > ema_20 > ema_50:
-        score += 15
-    elif current_close > ema_50:
-        score += 10
-    elif current_close > ema_20:
-        score += 5
-
-    # Factor 5: RSI
-    rsi = compute_rsi(close, 14)
-    rsi_val = rsi.iloc[-1]
-    if 55 <= rsi_val <= 70:
-        score += 20
-    elif 50 <= rsi_val < 55:
-        score += 15
-    elif 40 <= rsi_val < 50:
-        score += 10
-    elif rsi_val > 70:
-        score += 5
-
-    # Penalty: Overextension
-    dist_from_ema20 = (current_close - ema_20) / ema_20 * 100
-    if dist_from_ema20 > 12:
-        score -= 15
-    elif dist_from_ema20 > 8:
-        score -= 10
-    elif dist_from_ema20 > 5:
-        score -= 5
-
-    # Penalty: Low volume on breakout
-    if score >= 40 and vol_ratio < 1.0:
-        score -= 15
-
-    return max(0, min(100, score))
-
+    res = score_stock(inp)
+    return res.score if res.passed_filters else None
 
 # =============================================================================
 # MAIN BACKTEST

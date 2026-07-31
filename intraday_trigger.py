@@ -1,64 +1,84 @@
+"""
+Intraday trade plan generator — filters top screener stocks, maps to Security IDs,
+and writes structured trade_plan.json with provenance and date validation metadata.
+"""
+
 import argparse
 import pandas as pd
 import json
 import logging
 import os
+from datetime import timedelta
 from config import get_config
+from clock import now_ist, trading_date_ist
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
-def generate_trade_plan():
+
+def generate_trade_plan() -> None:
     """
-    Reads screener_results.csv, filters the top N stocks, 
-    maps them to Dhan Security IDs, and writes trade_plan.json.
+    Reads screener_results.csv, filters top stocks (Score >= 70),
+    maps to Dhan Security IDs, and writes structured trade_plan.json.
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("--universe", choices=["large", "small"], default="large")
     args, unknown = parser.parse_known_args()
-    
+
     in_file = "screener_results_smallcap.csv" if args.universe == "small" else "screener_results.csv"
     out_file = "trade_plan_smallcap.json" if args.universe == "small" else "trade_plan.json"
-    
+
     cfg = get_config()
     top_n = min(3, cfg.screener_top_n) if args.universe == "small" else cfg.screener_top_n
-    
-    if not os.path.exists(in_file):
-        logger.error(f"{in_file} not found! Run comprehensive_screener.py first.")
-        return
-        
-    if not os.path.exists('nse_eq_mapping.json'):
-        logger.error("nse_eq_mapping.json not found! Run update_security_ids.py first.")
-        return
 
-    # Load mapping
+    if not os.path.exists(in_file):
+        raise FileNotFoundError(f"Screener file {in_file} not found! Run comprehensive_screener.py first.")
+
+    if not os.path.exists('nse_eq_mapping.json'):
+        raise FileNotFoundError("nse_eq_mapping.json not found! Run update_security_ids.py first.")
+
     with open('nse_eq_mapping.json', 'r') as f:
         mapping = json.load(f)
 
-    # Load screener results
     df = pd.read_csv(in_file)
     
-    # Filter for high quality setups (e.g. Score >= 70) and take top N
-    df = df[df['Score'] >= 70]
-    top_stocks = df.head(top_n)
-    
-    if top_stocks.empty:
-        logger.warning(f"No high-quality breakout setups found today in {args.universe} universe. No trades planned.")
-        trade_plan = {}
-    else:
-        trade_plan = {}
+    # Filter for high quality setups (Score >= 70) and take top N
+    filtered_df = df[df['Score'] >= 70] if not df.empty and 'Score' in df.columns else pd.DataFrame()
+    top_stocks = filtered_df.head(top_n)
+
+    # Next trading session date
+    now = now_ist()
+    target_date = now.date()
+    # If generating after market hours (e.g. 3:45 PM), target is next day
+    if now.time() >= datetime.strptime("15:30", "%H:%M").time():
+        target_date = target_date + timedelta(days=1)
+
+    symbols_map = {}
+    if not top_stocks.empty:
         for _, row in top_stocks.iterrows():
             symbol = row['Stock']
             if symbol in mapping:
-                trade_plan[symbol] = mapping[symbol]
+                symbols_map[symbol] = str(mapping[symbol])
                 logger.info(f"Added {symbol} (Score: {row['Score']}) to {args.universe} trade plan.")
             else:
                 logger.warning(f"Could not find Security ID for {symbol}.")
-                
+    else:
+        logger.warning(f"No breakout setups (Score >= 70) found in {args.universe} universe.")
+
+    structured_plan = {
+        "trading_date": target_date.strftime("%Y-%m-%d"),
+        "generated_at": now.strftime("%Y-%m-%d %H:%M:%S IST"),
+        "universe": args.universe,
+        "symbols": symbols_map,
+    }
+
     with open(out_file, 'w') as f:
-        json.dump(trade_plan, f, indent=4)
-        
-    logger.info(f"{args.universe.title()} trade plan generated with {len(trade_plan)} stocks.")
+        json.dump(structured_plan, f, indent=4)
+
+    logger.info(f"{args.universe.title()} trade plan generated for {target_date} with {len(symbols_map)} stocks.")
+
+
+from datetime import datetime
 
 if __name__ == "__main__":
     generate_trade_plan()

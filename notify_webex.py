@@ -22,6 +22,7 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='repla
 
 import pandas as pd
 import requests
+from clock import now_ist
 
 try:
     from dotenv import load_dotenv
@@ -129,7 +130,7 @@ def build_morning_message(universe="large") -> str:
     import datetime
     import yfinance as yf
     
-    today_str = datetime.datetime.now().strftime("%B %d, %Y")
+    today_str = now_ist().strftime("%B %d, %Y")
     title = "Large/Mid Cap" if universe == "large" else "Small Cap"
     msg = f"## ☀️ PRE-MARKET BRIEFING ({today_str}) - {title}\n\n"
 
@@ -253,7 +254,7 @@ def build_pnl_message() -> str:
             
         positions = resp.get('data', [])
         
-        today_str = datetime.datetime.now().strftime("%B %d, %Y")
+        today_str = now_ist().strftime("%B %d, %Y")
         msg = f"## 💰 END OF DAY P&L REPORT ({today_str})\n\n"
         
         if not positions:

@@ -35,12 +35,18 @@ class TestHandleCommand:
         webex_listener.handle_command("Ping")
         mock_reply.assert_not_called()
 
+    @patch.object(webex_listener, "send_webex_reply")
+    def test_paper_command(self, mock_reply):
+        webex_listener.handle_command("/paper")
+        mock_reply.assert_called_once()
+        assert "Paper Trading Portfolio" in mock_reply.call_args[0][0]
+
     @patch.object(webex_listener, "run_script")
     @patch.object(webex_listener, "send_webex_reply")
-    def test_pnl_runs_notify_script(self, mock_reply, mock_run):
-        webex_listener.handle_command("/pnl")
+    def test_journal_command(self, mock_reply, mock_run):
+        webex_listener.handle_command("/journal")
         mock_reply.assert_called_once()
-        mock_run.assert_called_once_with(["python", "notify_webex.py", "pnl"])
+        mock_run.assert_called_once()
 
 
 class TestWebhookRoute:

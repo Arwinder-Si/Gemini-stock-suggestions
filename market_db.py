@@ -8,6 +8,7 @@ Stores global signals, screener history, and news features.
 import sqlite3
 import pandas as pd
 from datetime import datetime
+from clock import now_ist
 import os
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "market_data.db")
@@ -83,8 +84,8 @@ def save_global_signals(df: pd.DataFrame):
         
     init_db()
     conn = get_connection()
-    today = datetime.now().strftime("%Y-%m-%d")
-    now_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    today = now_ist().strftime("%Y-%m-%d")
+    now_ts = now_ist().strftime("%Y-%m-%d %H:%M:%S")
 
     for signal_name, row in df.iterrows():
         try:
@@ -148,7 +149,7 @@ def save_screener_results(csv_path: str):
         return
         
     conn = get_connection()
-    today = datetime.now().strftime("%Y-%m-%d")
+    today = now_ist().strftime("%Y-%m-%d")
 
     for _, row in df.iterrows():
         try:
@@ -176,7 +177,7 @@ def save_news_results(csv_path: str):
         return
         
     conn = get_connection()
-    today = datetime.now().strftime("%Y-%m-%d")
+    today = now_ist().strftime("%Y-%m-%d")
 
     for _, row in df.iterrows():
         try:

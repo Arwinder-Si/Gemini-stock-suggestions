@@ -39,6 +39,8 @@ python comprehensive_screener.py
 python intraday_trigger.py
 python comprehensive_screener.py --universe small
 python intraday_trigger.py --universe small
+python market_snapshot_job.py
+python outcome_enricher.py
 python -c "import market_db; market_db.save_screener_results('screener_results.csv'); market_db.save_screener_results('screener_results_smallcap.csv'); market_db.save_news_results('news_features.csv')"
 python notify_webex.py evening
 EOF

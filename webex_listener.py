@@ -10,11 +10,16 @@ Commands:
   /pnl      — Live Dhan P&L + Holdings report
   /plan     — Current Evening Trade Plan
   /morning  — Force a Morning Gap Prediction
+  /paper    — Paper Trading Portfolio Status
+  /journal  — Today's Trade Journal Report
+  /stats    — Analytics summary (win rate, trades, failure tags)
+  /kill     — Emergency shutdown — flatten all positions and halt agent
 """
 
 import sys
 import subprocess
 import logging
+import os
 import requests
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
@@ -83,13 +88,44 @@ def handle_command(text: str) -> None:
         send_webex_reply("🔄 Fetching Global Signals...")
         run_script(["python", "global_signals.py"])
         run_script(["python", "notify_webex.py", "morning"])
+    elif cmd == '/paper':
+        capital = cfg.paper_starting_capital
+        mode = cfg.trading_mode.upper()
+        send_webex_reply(
+            f"📊 **Paper Trading Portfolio**\n\n"
+            f"- **Mode:** {mode}\n"
+            f"- **Starting Capital:** ₹{capital:,.0f}\n"
+            f"- **Max Daily Trades:** {cfg.max_daily_trades}\n"
+            f"- **Max Daily Loss:** ₹{cfg.max_daily_loss_rupees:,.0f}\n"
+            f"- **Risk Per Trade:** {cfg.risk_per_trade_pct * 100:.1f}%\n\n"
+            f"Use `/journal` to view today's trades, `/stats` for analytics."
+        )
+    elif cmd == '/journal':
+        send_webex_reply("📖 **Fetching Today's Trade Journal...**")
+        run_script(["python", "-c", "from trade_journal_report import generate_journal_report; print(generate_journal_report([]))"])
+    elif cmd == '/kill':
+        send_webex_reply("🛑 **KILL SWITCH ACTIVATED** — Writing sentinel file. Agent will flatten positions and halt.")
+        try:
+            with open("KILL_SWITCH", "w") as f:
+                from clock import now_ist
+                f.write(f"Kill requested via ChatOps at {now_ist().isoformat()}")
+            logger.warning("KILL_SWITCH file created via /kill ChatOps command.")
+        except Exception as e:
+            send_webex_reply(f"⚠️ Failed to write kill switch: {e}")
+    elif cmd == '/stats':
+        send_webex_reply("📈 **Fetching Analytics Summary...**")
+        run_script(["python", "-c", "from analytics_report import print_stats_summary; print_stats_summary()"])
     elif cmd == '/help':
         send_webex_reply(
             "**📋 Available Commands:**\n\n"
             "`/ping` — Check if the bot is alive\n"
             "`/pnl` — Live Dhan P&L + Holdings\n"
+            "`/paper` — Paper Trading Portfolio Status\n"
+            "`/journal` — Today's Trade Journal Report\n"
+            "`/stats` — Analytics summary (win rate, failure tags)\n"
             "`/plan` — Current Evening Trade Plan\n"
             "`/morning` — Morning Gap Prediction\n"
+            "`/kill` — ⚠️ Emergency shutdown (flatten + halt)\n"
             "`/help` — Show this message"
         )
     else:
@@ -97,6 +133,7 @@ def handle_command(text: str) -> None:
             f"❓ Unknown command `{cmd}`.\n"
             "Type `/help` for available commands."
         )
+
 
 
 @app.route("/webhook", methods=["POST"])

@@ -1,6 +1,6 @@
 """
 Backtesting module — replays historical intraday candles through the
-ORB strategy and reports simulated P&L.
+ORB strategy and reports simulated P&L with full Indian transaction cost modeling.
 
 Uses the SAME ORBBreakoutStrategy class as live mode for logic parity.
 """
@@ -9,113 +9,79 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta, time as dt_time
-
+import numpy as np
 import pandas as pd
 
 from config import get_config
 from models import Candle
 from strategy import ORBBreakoutStrategy, ORBConfig
+from costs import CostModel, Side, ChargeBreakdown
 
 logger = logging.getLogger(__name__)
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# Historical Data Loader
-# ═══════════════════════════════════════════════════════════════════════
-
-class HistoricalDataLoader:
-    """Fetches intraday 1-min candles from the DhanHQ REST API (v2)."""
-
-    def __init__(self, client_id: str, access_token: str) -> None:
-        from dhanhq import dhanhq, DhanContext  # lazy import
-        context = DhanContext(client_id, access_token)
-        self._dhan = dhanhq(context)
-
-    def fetch_intraday_data(
-        self,
-        security_id: str,
-        from_date: str,
-        to_date: str,
-    ) -> pd.DataFrame:
-        """
-        Fetch 1-minute OHLCV candles.
-
-        Parameters
-        ----------
-        security_id : NSE security ID (e.g. "11536")
-        from_date, to_date : "YYYY-MM-DD"
-
-        Returns
-        -------
-        DataFrame with columns: timestamp, open, high, low, close, volume
-        """
-        logger.info("Fetching data for %s  %s → %s …", security_id, from_date, to_date)
-        try:
-            response = self._dhan.intraday_minute_data(
-                security_id=security_id,
-                exchange_segment="NSE_EQ",
-                instrument_type="EQUITY",
-                from_date=from_date,
-                to_date=to_date,
-            )
-
-            if response.get("status") == "success" and "data" in response:
-                data = response["data"]
-                df = pd.DataFrame({
-                    "timestamp": pd.to_datetime(data["start_Time"]),
-                    "open": data["open"],
-                    "high": data["high"],
-                    "low": data["low"],
-                    "close": data["close"],
-                    "volume": data["volume"],
-                })
-                df.sort_values("timestamp", inplace=True)
-                df.reset_index(drop=True, inplace=True)
-                return df
-
-            logger.error("API error: %s", response)
-            return pd.DataFrame()
-
-        except Exception:
-            logger.exception("Failed to fetch historical data")
-            return pd.DataFrame()
-
-
-# ═══════════════════════════════════════════════════════════════════════
-# ORB Backtester
-# ═══════════════════════════════════════════════════════════════════════
-
 class ORBBacktester:
-    """Replays candles through ORBBreakoutStrategy and simulates trades.
-
-    On signal → open a virtual trade.
-    On each subsequent candle → check SL hit, TP hit, or time-based exit.
+    """
+    Replays candles through ORBBreakoutStrategy and simulates multi-symbol intraday trades.
+    Incorporates next-bar open fill execution, itemized Indian transaction charges,
+    and sample sufficiency statistics with bootstrap confidence intervals.
     """
 
-    def __init__(self, cfg: ORBConfig) -> None:
+    def __init__(
+        self,
+        cfg: ORBConfig,
+        cost_model: CostModel | None = None,
+        intrabar_mode: str = "pessimistic",
+        max_concurrent_trades: int = 5,
+    ) -> None:
         self._cfg = cfg
+        self._cost_model = cost_model or CostModel()
+        self._intrabar_mode = intrabar_mode
+        self._max_concurrent_trades = max_concurrent_trades
+
         self._strategy = ORBBreakoutStrategy(cfg)
         self._trades: list[dict] = []
-        self._active_trade: dict | None = None
+        self._active_trades: dict[str, dict] = {}  # symbol -> trade state
+        self._pending_entries: dict[str, dict] = {}  # symbol -> pending order for next bar
 
-    def run(self, df: pd.DataFrame, symbol: str) -> None:
-        logger.info("Backtesting %s on %d candles …", symbol, len(df))
+    def run(self, df_dict: dict[str, pd.DataFrame]) -> dict:
+        """
+        Run universe backtest on a dictionary of DataFrames: {symbol: df_candles}.
+        Concurrently steps through timestamps across symbols.
+        """
+        logger.info("Running multi-symbol backtest on %d symbols ...", len(df_dict))
+
+        # Merge all symbols into a single timeline sorted by timestamp
+        combined_rows = []
+        for symbol, df in df_dict.items():
+            if df.empty:
+                continue
+            df_copy = df.copy()
+            df_copy["symbol"] = symbol
+            combined_rows.append(df_copy)
+
+        if not combined_rows:
+            logger.warning("No candle data available for backtest.")
+            return {}
+
+        universe_df = pd.concat(combined_rows, ignore_index=True)
+        universe_df["timestamp"] = pd.to_datetime(universe_df["timestamp"])
+        universe_df.sort_values(by="timestamp", inplace=True)
+        universe_df.reset_index(drop=True, inplace=True)
 
         prev_date: str | None = None
 
-        for _, row in df.iterrows():
+        for _, row in universe_df.iterrows():
+            symbol = str(row["symbol"])
             ts: datetime = row["timestamp"]
             timestamp_str = ts.strftime("%Y-%m-%d %H:%M:%S")
             date_str = ts.strftime("%Y-%m-%d")
             time_obj = ts.time()
 
-            # ── Day boundary — force-close any open trade ────────────
-            if prev_date is not None and date_str != prev_date and self._active_trade:
-                self._close_trade(
-                    exit_price=row["close"],
-                    exit_time=timestamp_str,
-                    exit_reason="End of Day Exit",
-                )
+            # EOD check on date change
+            if prev_date is not None and date_str != prev_date:
+                self._close_all_active_trades(timestamp_str, "End of Day Exit", row["close"])
+                self._pending_entries.clear()
             prev_date = date_str
 
             candle = Candle(
@@ -128,144 +94,195 @@ class ORBBacktester:
                 volume=int(row["volume"]),
             )
 
-            if not self._active_trade:
-                sig = self._strategy.on_candle(candle)
-                if sig:
-                    self._active_trade = {
-                        "symbol": sig.symbol,
-                        "direction": sig.direction,
-                        "entry_time": sig.timestamp,
-                        "entry_price": sig.entry,
-                        "sl": sig.sl,
-                        "tp": sig.tp,
-                        "reason": sig.reason,
+            # 1. Execute pending next-bar entry if available
+            if symbol in self._pending_entries:
+                pending = self._pending_entries.pop(symbol)
+                if len(self._active_trades) < self._max_concurrent_trades:
+                    # Fill at next bar open with slippage
+                    side = Side.BUY if pending["direction"] == "LONG" else Side.SELL
+                    fill_price = self._cost_model.apply_slippage(candle.open, side, is_entry=True)
+                    
+                    # Recompute TP based on actual fill price to preserve RR ratio
+                    risk = abs(fill_price - pending["sl"])
+                    if pending["direction"] == "LONG":
+                        tp = fill_price + (risk * self._cfg.rr_ratio)
+                    else:
+                        tp = fill_price - (risk * self._cfg.rr_ratio)
+
+                    self._active_trades[symbol] = {
+                        "symbol": symbol,
+                        "direction": pending["direction"],
+                        "entry_time": timestamp_str,
+                        "entry_price": fill_price,
+                        "sl": pending["sl"],
+                        "tp": round(tp, 2),
+                        "reason": pending["reason"],
                     }
+
+            # 2. Manage active trade for symbol
+            if symbol in self._active_trades:
+                self._manage_trade(symbol, candle, time_obj)
             else:
-                self._manage_trade(candle, time_obj)
+                # 3. Process candle for new signals if under trade capacity limit
+                if len(self._active_trades) + len(self._pending_entries) < self._max_concurrent_trades:
+                    sig = self._strategy.on_candle(candle)
+                    if sig and sig.direction in ("LONG", "SHORT"):
+                        self._pending_entries[symbol] = {
+                            "direction": sig.direction,
+                            "sl": sig.sl,
+                            "reason": sig.reason,
+                        }
 
-        # Close any remaining open trade
-        if self._active_trade and not df.empty:
-            last = df.iloc[-1]
-            self._close_trade(
-                exit_price=float(last["close"]),
-                exit_time=last["timestamp"].strftime("%Y-%m-%d %H:%M:%S"),
-                exit_reason="End of Data Exit",
-            )
+        # Force-close any open trades at end of dataset
+        self._close_all_active_trades(prev_date or "End of Data", "End of Data Exit", 0.0)
 
-        self._print_summary()
+        metrics = self._calculate_metrics()
+        self._print_summary(metrics)
         self._export_results()
+        return metrics
 
-    # ── Trade management ─────────────────────────────────────────────
-
-    def _manage_trade(self, candle: Candle, time_obj: dt_time) -> None:
-        tr = self._active_trade
-        assert tr is not None
+    def _manage_trade(self, symbol: str, candle: Candle, time_obj: dt_time) -> None:
+        tr = self._active_trades[symbol]
         exit_price: float | None = None
         exit_reason = ""
 
-        if tr["direction"] == "LONG":
-            if candle.low <= tr["sl"]:
-                exit_price, exit_reason = tr["sl"], "SL Hit"
-            elif candle.high >= tr["tp"]:
-                exit_price, exit_reason = tr["tp"], "TP Hit"
-        else:  # SHORT
-            if candle.high >= tr["sl"]:
-                exit_price, exit_reason = tr["sl"], "SL Hit"
-            elif candle.low <= tr["tp"]:
-                exit_price, exit_reason = tr["tp"], "TP Hit"
+        is_long = tr["direction"] == "LONG"
 
-        if not exit_price and time_obj >= self._cfg.exit_time:
-            exit_price = candle.close
-            exit_reason = "Time Exit"
+        sl_hit = (candle.low <= tr["sl"]) if is_long else (candle.high >= tr["sl"])
+        tp_hit = (candle.high >= tr["tp"]) if is_long else (candle.low <= tr["tp"])
+
+        if sl_hit and tp_hit:
+            # Intrabar collision: pessimistic assumes SL hit first
+            if self._intrabar_mode == "pessimistic":
+                exit_price, exit_reason = tr["sl"], "SL Hit (Pessimistic)"
+            else:
+                exit_price, exit_reason = tr["tp"], "TP Hit (Optimistic)"
+        elif sl_hit:
+            exit_price, exit_reason = tr["sl"], "SL Hit"
+        elif tp_hit:
+            exit_price, exit_reason = tr["tp"], "TP Hit"
+        elif time_obj >= self._cfg.exit_time:
+            exit_price, exit_reason = candle.close, "Time Exit"
 
         if exit_price is not None:
-            self._close_trade(exit_price, candle.timestamp, exit_reason)
+            self._close_trade(symbol, exit_price, candle.timestamp, exit_reason)
 
-    def _close_trade(self, exit_price: float, exit_time: str, exit_reason: str) -> None:
-        tr = self._active_trade
-        assert tr is not None
+    def _close_trade(self, symbol: str, exit_price: float, exit_time: str, exit_reason: str) -> None:
+        tr = self._active_trades.pop(symbol, None)
+        if not tr:
+            return
+
+        entry_side = Side.BUY if tr["direction"] == "LONG" else Side.SELL
+        exit_side = Side.SELL if entry_side == Side.BUY else Side.BUY
+
+        # Apply exit slippage
+        realized_exit_price = self._cost_model.apply_slippage(exit_price, exit_side, is_entry=False)
         tr["exit_time"] = exit_time
-        tr["exit_price"] = exit_price
+        tr["exit_price"] = realized_exit_price
         tr["exit_reason"] = exit_reason
 
-        if tr["direction"] == "LONG":
-            tr["pnl_pct"] = (exit_price - tr["entry_price"]) / tr["entry_price"] * 100
-        else:
-            tr["pnl_pct"] = (tr["entry_price"] - exit_price) / tr["entry_price"] * 100
+        # Quantity assuming ₹100,000 capital per trade
+        trade_capital = 100_000.0
+        qty = max(1, int(trade_capital / tr["entry_price"]))
+        tr["quantity"] = qty
+
+        # Compute costs & itemized charges
+        entry_ch, exit_ch, gross_pnl, net_pnl = self._cost_model.round_trip(
+            tr["entry_price"], realized_exit_price, qty, entry_side
+        )
+
+        tr["gross_pnl"] = gross_pnl
+        tr["total_charges"] = entry_ch.total_charges + exit_ch.total_charges
+        tr["net_pnl"] = net_pnl
+
+        # Expectancy in R
+        risk_per_share = abs(tr["entry_price"] - tr["sl"])
+        total_risk_rs = max(1.0, risk_per_share * qty)
+        tr["net_r"] = round(net_pnl / total_risk_rs, 3)
 
         self._trades.append(tr)
-        self._active_trade = None
 
-    # ── Reporting ────────────────────────────────────────────────────
+    def _close_all_active_trades(self, timestamp: str, reason: str, fallback_price: float) -> None:
+        active_symbols = list(self._active_trades.keys())
+        for sym in active_symbols:
+            px = self._active_trades[sym].get("sl", fallback_price)
+            self._close_trade(sym, px, timestamp, reason)
 
-    def _print_summary(self) -> None:
+    def _calculate_metrics(self) -> dict:
         if not self._trades:
-            logger.info("No trades taken during the backtest period.")
-            return
+            return {"total_trades": 0, "sample_sufficient": False}
 
         df_t = pd.DataFrame(self._trades)
         total = len(df_t)
-        wins = (df_t["pnl_pct"] > 0).sum()
+        net_pnls = df_t["net_pnl"].values
+        net_r_vals = df_t["net_r"].values
 
-        summary = {
+        wins = (net_pnls > 0).sum()
+        win_rate = (wins / total) * 100
+
+        gross_gains = df_t[df_t["gross_pnl"] > 0]["gross_pnl"].sum()
+        gross_losses = abs(df_t[df_t["gross_pnl"] < 0]["gross_pnl"].sum())
+        profit_factor = round(gross_gains / gross_losses, 2) if gross_losses > 0 else 999.0
+
+        mean_net_r = float(np.mean(net_r_vals))
+
+        # Bootstrap 95% Confidence Interval for Net Expectancy R
+        np.random.seed(42)
+        boot_means = [np.mean(np.random.choice(net_r_vals, size=total, replace=True)) for _ in range(1000)]
+        ci_lower = float(np.percentile(boot_means, 2.5))
+        ci_upper = float(np.percentile(boot_means, 97.5))
+
+        # Sample sufficiency check: need at least 50 trades and CI lower > 0
+        sample_sufficient = (total >= 50) and (ci_lower > 0.0)
+
+        # Max Drawdown %
+        cum_pnl = np.cumsum(net_pnls)
+        peak = np.maximum.accumulate(cum_pnl)
+        drawdown = peak - cum_pnl
+        max_dd = float(np.max(drawdown)) if len(drawdown) > 0 else 0.0
+
+        return {
             "total_trades": total,
-            "win_rate_pct": round(wins / total * 100, 2),
-            "avg_pnl_pct": round(df_t["pnl_pct"].mean(), 2),
-            "total_pnl_pct": round(df_t["pnl_pct"].sum(), 2),
-            "max_win_pct": round(df_t["pnl_pct"].max(), 2),
-            "max_loss_pct": round(df_t["pnl_pct"].min(), 2),
+            "win_rate_pct": round(win_rate, 2),
+            "total_net_pnl": round(float(np.sum(net_pnls)), 2),
+            "net_expectancy_r": round(mean_net_r, 3),
+            "ci_95_lower_r": round(ci_lower, 3),
+            "ci_95_upper_r": round(ci_upper, 3),
+            "profit_factor": profit_factor,
+            "max_drawdown_rs": round(max_dd, 2),
+            "sample_sufficient": sample_sufficient,
         }
 
-        print("\n=== BACKTEST SUMMARY ===")
-        for k, v in summary.items():
-            label = k.replace("_", " ").title()
-            print(f"  {label}: {v}")
-        print("========================\n")
+    def _print_summary(self, metrics: dict) -> None:
+        print("\n" + "=" * 55)
+        print("           ORB BACKTEST PERFORMANCE REPORT           ")
+        print("=" * 55)
+
+        if not metrics or metrics.get("total_trades", 0) == 0:
+            print("  No trades taken during the backtest period.")
+            print("=" * 55 + "\n")
+            return
+
+        print(f"  Total Trades:         {metrics['total_trades']}")
+        print(f"  Win Rate:             {metrics['win_rate_pct']}%")
+        print(f"  Net Expectancy (R):   {metrics['net_expectancy_r']} R / trade")
+        print(f"  95% Bootstrap CI (R): [{metrics['ci_95_lower_r']} R, {metrics['ci_95_upper_r']} R]")
+        print(f"  Profit Factor:        {metrics['profit_factor']}")
+        print(f"  Max Drawdown:        ₹{metrics['max_drawdown_rs']}")
+        print(f"  Total Net P&L:       ₹{metrics['total_net_pnl']}")
+        print("-" * 55)
+
+        if metrics["sample_sufficient"]:
+            print("  STATUS: [GREEN] Statistical edge confirmed (CI > 0, N >= 50).")
+        elif metrics["ci_95_lower_r"] <= 0 < metrics["ci_95_upper_r"]:
+            print("  STATUS: [AMBER] Inconclusive. Need more historical data.")
+        else:
+            print("  STATUS: [RED] Negative expectancy net-of-costs.")
+
+        print("=" * 55 + "\n")
 
     def _export_results(self) -> None:
         if self._trades:
             df_t = pd.DataFrame(self._trades)
             df_t.to_csv("backtest_results.csv", index=False)
             logger.info("Results exported to backtest_results.csv")
-
-
-# ═══════════════════════════════════════════════════════════════════════
-# CLI entry-point
-# ═══════════════════════════════════════════════════════════════════════
-
-if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s  %(levelname)-8s  %(message)s",
-    )
-
-    cfg = get_config()
-
-    if not cfg.security_ids:
-        logger.error("No security IDs configured in .env.")
-    else:
-        orb_cfg = ORBConfig(
-            orb_start=cfg.orb_start_time_parsed,
-            orb_end=cfg.orb_end_time_parsed,
-            min_volume=cfg.min_volume_threshold,
-            rr_ratio=cfg.risk_reward_ratio,
-            exit_time=cfg.time_based_exit_parsed,
-        )
-
-        loader = HistoricalDataLoader(cfg.dhan_client_id, cfg.dhan_access_token)
-
-        symbol = cfg.security_ids[0]
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=5)
-
-        df = loader.fetch_intraday_data(
-            security_id=symbol,
-            from_date=start_date.strftime("%Y-%m-%d"),
-            to_date=end_date.strftime("%Y-%m-%d"),
-        )
-
-        if not df.empty:
-            bt = ORBBacktester(orb_cfg)
-            bt.run(df, cfg.security_id_to_name.get(symbol, symbol))
-        else:
-            logger.error("Could not run backtest — empty data.")
