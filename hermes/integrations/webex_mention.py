@@ -23,3 +23,8 @@ def format_user_command(
     """Full command a user can send: tagged bot + command."""
     alias = cmd.lstrip("/")
     return f"{format_bot_mention(bot_email=bot_email, bot_name=bot_name)} {alias}"
+
+
+def plain_user_command(cmd: str, *, bot_name: str = "Hermes") -> str:
+    """Plain @Name command (safe inside adaptive card attachments)."""
+    return f"@{bot_name} {cmd.lstrip('/')}"

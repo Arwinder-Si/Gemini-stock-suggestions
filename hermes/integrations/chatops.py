@@ -124,17 +124,19 @@ def send_help_card(
     bot_name: str = "Hermes",
     bot_email: str = "",
 ) -> None:
-    """Send help menu with command buttons and Hermes description."""
+    """Send help as text (with personEmail tags) plus a separate button card."""
     parts = []
     if include_about:
         parts.append(hermes_about_markdown(bot_email=bot_email, bot_name=bot_name))
         parts.append("---")
     parts.append(help_menu_markdown(bot_email=bot_email, bot_name=bot_name))
+    # Webex API: mentions cannot be combined with attachments in one message.
+    send_webex_message(token=token, room_id=room_id, markdown="\n\n".join(parts))
     send_webex_message(
         token=token,
         room_id=room_id,
-        markdown="\n\n".join(parts),
-        attachments=help_message_attachments(bot_email=bot_email, bot_name=bot_name),
+        markdown="**Command menu** — tap a button below:",
+        attachments=help_message_attachments(bot_name=bot_name),
     )
 
 
@@ -176,27 +178,39 @@ def _strip_mentions(text: str) -> str:
 
     cleaned = re.sub(r"<[^>|]+\|[^>]+>", "", text)
     cleaned = re.sub(r"@\S+", "", cleaned)
+    return cleaned.strip()
+
+
+def _normalize_user_text(text: str, *, bot_name: str = "Hermes") -> str:
+    """Strip Webex mention markup and leading bot display name."""
+    import re
+
+    cleaned = _strip_mentions(text)
+    cleaned = re.sub(rf"(?i)^{re.escape(bot_name)}\s+", "", cleaned.strip())
     return cleaned.strip().lower()
 
 
-def extract_command_from_text(text: str) -> str | None:
-    """Parse @Hermes /plan or @Hermes plan into a slash command."""
+def extract_command_from_text(text: str, *, bot_name: str = "Hermes") -> str | None:
+    """Parse @Hermes /plan, @Hermes plan, or Hermes plan into a slash command."""
     slash_idx = text.find("/")
     if slash_idx != -1:
         return text[slash_idx:].strip().lower().split()[0]
 
-    cleaned = _strip_mentions(text).strip().lower()
+    cleaned = _normalize_user_text(text, bot_name=bot_name)
     if not cleaned:
         return None
-    first_word = cleaned.split()[0]
-    return COMMAND_ALIASES.get(first_word)
+    for word in cleaned.split():
+        alias = COMMAND_ALIASES.get(word)
+        if alias:
+            return alias
+    return None
 
 
-def is_help_or_unknown(text: str) -> bool:
+def is_help_or_unknown(text: str, *, bot_name: str = "Hermes") -> bool:
     """True when the user @mentioned the bot but did not send a known command."""
-    if extract_command_from_text(text):
+    if extract_command_from_text(text, bot_name=bot_name):
         return False
-    cleaned = _strip_mentions(text)
+    cleaned = _normalize_user_text(text, bot_name=bot_name)
     if not cleaned:
         return True
     return any(phrase in cleaned for phrase in HELP_PHRASES) or len(cleaned.split()) <= 6
@@ -289,15 +303,17 @@ def handle_command(text: str, *, token: str, room_id: str) -> None:
         )
     else:
         send_webex_reply(
-            f"❓ Unknown command `{cmd}`.\n\n" + help_menu_markdown(),
+            f"❓ Unknown command `{cmd}`.",
             token=token,
             room_id=room_id,
         )
-        send_webex_message(
+        bot = get_bot_identity(token)
+        send_help_card(
             token=token,
             room_id=room_id,
-            markdown="Copy a command from the card and send it with @Hermes:",
-            attachments=help_message_attachments(),
+            include_about=False,
+            bot_name=bot.get("displayName", "Hermes"),
+            bot_email=bot.get("email", ""),
         )
 
 
@@ -418,12 +434,12 @@ def process_message(
         return
     text = (message.get("text") or "").strip()
 
-    cmd = extract_command_from_text(text)
+    cmd = extract_command_from_text(text, bot_name=bot_name)
     if cmd:
         handle_command(cmd, token=token, room_id=room_id)
         return
 
-    if is_help_or_unknown(text):
+    if is_help_or_unknown(text, bot_name=bot_name):
         logger.info("Help request: '%s'", text[:80])
         send_help_card(
             token=token,

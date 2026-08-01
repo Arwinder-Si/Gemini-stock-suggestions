@@ -32,13 +32,14 @@ class TestHandleCommand:
         assert kwargs["room_id"] == "room"
         assert kwargs["include_about"] is True
 
-    @patch.object(chatops, "send_webex_message")
+    @patch.object(chatops, "get_bot_identity", return_value={"displayName": "Hermes", "email": "hermes@webex.bot", "id": "bot"})
+    @patch.object(chatops, "send_help_card")
     @patch.object(chatops, "send_webex_reply")
-    def test_unknown_command(self, mock_reply, mock_message):
+    def test_unknown_command(self, mock_reply, mock_help, _mock_identity):
         chatops.handle_command("/foobar", token="tok", room_id="room")
         text = mock_reply.call_args.kwargs.get("text", mock_reply.call_args[0][0])
         assert "Unknown command" in text
-        mock_message.assert_called_once()
+        mock_help.assert_called_once()
 
     @patch.object(chatops, "send_webex_reply")
     def test_no_slash_ignored(self, mock_reply):
