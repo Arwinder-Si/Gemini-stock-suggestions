@@ -13,9 +13,9 @@ import requests
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from config import get_config
-from data_cache import CandleCache
-from clock import now_ist
+from hermes.config import get_config
+from hermes.data.data_cache import CandleCache
+from hermes.clock import now_ist
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s [%(name)s] %(message)s")
 logger = logging.getLogger("backfill_candles")
@@ -73,7 +73,7 @@ def backfill_universe(security_ids: list[str], days_back: int = 90, cache_dir: s
     cache = CandleCache(base_dir=cache_dir)
 
     try:
-        from auth_manager import get_fresh_dhan_token
+        from hermes.integrations.auth_manager import get_fresh_dhan_token
         access_token = get_fresh_dhan_token(cfg.dhan_client_id, cfg.dhan_pin, cfg.dhan_totp_secret)
     except Exception as e:
         logger.error(f"Failed to generate Dhan Access Token: {e}")

@@ -2,9 +2,9 @@ import queue
 import threading
 import time
 import pytest
-from models import Candle
-from main import agent_loop_worker
-from analytics_mongo import InMemoryAnalyticsStore
+from hermes.domain.models import Candle
+from hermes.live.agent import agent_loop_worker
+from hermes.data.analytics_mongo import InMemoryAnalyticsStore
 
 def test_agent_loop_synthetic_day():
     q = queue.Queue()

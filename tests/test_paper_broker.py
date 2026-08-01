@@ -1,8 +1,8 @@
 import pytest
-from orders import Order, OrderSide, OrderType, OrderState
-from portfolio import Portfolio
-from paper_broker import PaperBroker
-from costs import CostModel
+from hermes.domain.orders import Order, OrderSide, OrderType, OrderState
+from hermes.execution.portfolio import Portfolio
+from hermes.execution.paper_broker import PaperBroker
+from hermes.domain.costs import CostModel
 
 def test_paper_broker_fill_order():
     port = Portfolio(starting_capital=500_000.0)

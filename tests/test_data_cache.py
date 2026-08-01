@@ -3,7 +3,7 @@ from pathlib import Path
 from datetime import date
 import pandas as pd
 import pytest
-from data_cache import CandleCache
+from hermes.data.data_cache import CandleCache
 
 def test_candle_cache_write_read_coverage():
     with tempfile.TemporaryDirectory() as tmpdir:

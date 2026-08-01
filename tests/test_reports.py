@@ -1,8 +1,8 @@
 """Unit tests for daily comparison report and analytics report modules."""
 
-from analytics_models import PaperTrade, FailureAnalysis
-from daily_report import build_daily_comparison, format_daily_report
-from analytics_report import (
+from hermes.data.analytics_models import PaperTrade, FailureAnalysis
+from hermes.analytics.daily_report import build_daily_comparison, format_daily_report
+from hermes.analytics.analytics_report import (
     generate_strategy_report,
     generate_sector_report,
     generate_failure_tag_report,

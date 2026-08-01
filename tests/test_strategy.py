@@ -4,8 +4,8 @@ from datetime import time as dt_time
 
 import pytest
 
-from models import Candle
-from strategy import ORBBreakoutStrategy, ORBConfig
+from hermes.domain.models import Candle
+from hermes.domain.strategy import ORBBreakoutStrategy, ORBConfig
 
 # ── Fixtures ─────────────────────────────────────────────────────────
 

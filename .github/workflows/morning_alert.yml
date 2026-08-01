@@ -21,33 +21,26 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.11'
           cache: 'pip'
 
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Download latest trade plan
-        uses: actions/download-artifact@v4
-        with:
-          name: screener-results-${{ github.run_number }}
-          path: .
-        continue-on-error: true
-
-      - name: Run Global Market Intelligence
-        run: python global_signals.py
-
-      - name: Send Morning Webex Notification
+      # The evening workflow commits trade_plan.json to the repo, so a fresh
+      # checkout of main already has the latest plan — no artifact handoff needed.
+      - name: Run Morning Pipeline
         env:
           WEBEX_TOKEN: ${{ secrets.WEBEX_TOKEN }}
           WEBEX_ROOM_ID: ${{ secrets.WEBEX_ROOM_ID }}
-        run: python notify_webex.py morning
+        run: python -m hermes.cli morning
 
       - name: Commit Database changes
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add market_data.db || true
-          git commit -m "Auto-update market_data.db [skip ci]" || echo "No changes to commit"
+          git add -f morning_trade_plan.json || true
+          git commit -m "Auto-update market_data.db and morning plan [skip ci]" || echo "No changes to commit"
           git push
 

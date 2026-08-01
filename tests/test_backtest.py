@@ -2,9 +2,9 @@ import pandas as pd
 import numpy as np
 import pytest
 from datetime import datetime, time as dt_time
-from backtest import ORBBacktester
-from strategy import ORBConfig
-from costs import CostModel
+from hermes.research.backtest import ORBBacktester
+from hermes.domain.strategy import ORBConfig
+from hermes.domain.costs import CostModel
 
 def test_orb_backtester_multi_symbol():
     orb_cfg = ORBConfig(

@@ -1,14 +1,14 @@
 """Unit tests for rule-based trade evaluation."""
 
-from evaluation import (
+from hermes.analytics.evaluation import (
     label_paper_trade,
     label_recommendation_outcome,
     compute_aggregate_metrics,
     OutcomeLabel,
     TradeEvaluation,
 )
-from analytics_models import PaperTrade, Recommendation
-from outcome_enricher import RecommendationOutcome
+from hermes.data.analytics_models import PaperTrade, Recommendation
+from hermes.pipelines.steps.outcome_enricher import RecommendationOutcome
 
 
 class TestLabelPaperTrade:

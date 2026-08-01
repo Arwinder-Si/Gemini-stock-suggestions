@@ -1,6 +1,6 @@
 import pytest
-from analytics_mongo import InMemoryAnalyticsStore
-from analytics_models import Recommendation, TradeJournalEntry
+from hermes.data.analytics_mongo import InMemoryAnalyticsStore
+from hermes.data.analytics_models import Recommendation, TradeJournalEntry
 
 def test_in_memory_analytics_store():
     store = InMemoryAnalyticsStore()

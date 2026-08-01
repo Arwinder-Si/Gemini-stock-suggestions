@@ -1,8 +1,8 @@
 """Unit tests for DhanBroker stub."""
 
 import pytest
-from dhan_broker import DhanBroker
-from orders import Order, OrderSide, OrderType
+from hermes.execution.dhan_broker import DhanBroker
+from hermes.domain.orders import Order, OrderSide, OrderType
 
 
 class TestDhanBrokerStub:

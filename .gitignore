@@ -39,5 +39,8 @@ market_data.db
 # Parquet candle cache (large, local-only)
 data/
 
+# Hermes run artifacts, manifests, state (local-only)
+var/
+
 # Agent kill switch sentinel
 KILL_SWITCH

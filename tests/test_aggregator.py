@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from market_feed import CandleAggregator
+from hermes.live.feed import CandleAggregator
 
 
 class TestSameMinuteTicks:

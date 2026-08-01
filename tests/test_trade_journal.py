@@ -1,6 +1,6 @@
 import pytest
-from analytics_models import Recommendation, PaperTrade
-from trade_journal import build_trade_journal_entry
+from hermes.data.analytics_models import Recommendation, PaperTrade
+from hermes.analytics.trade_journal import build_trade_journal_entry
 
 def test_build_trade_journal_entry():
     rec = Recommendation(

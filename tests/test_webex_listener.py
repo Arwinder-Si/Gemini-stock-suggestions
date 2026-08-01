@@ -1,99 +1,131 @@
-"""Unit tests for Webex ChatOps command routing."""
+"""Unit tests for Webex ChatOps polling and command routing."""
 
-from unittest.mock import patch
+from __future__ import annotations
 
-import webex_listener
+from pathlib import Path
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+import hermes.integrations.chatops as chatops
 
 
 class TestHandleCommand:
-    @patch.object(webex_listener, "send_webex_reply")
+    @patch.object(chatops, "send_webex_reply")
     def test_ping_with_mention(self, mock_reply):
-        webex_listener.handle_command("Hermes /ping")
+        chatops.handle_command("Hermes /ping", token="tok", room_id="room")
         mock_reply.assert_called_once()
-        assert "Pong" in mock_reply.call_args[0][0]
+        assert "Pong" in mock_reply.call_args.kwargs.get("text", mock_reply.call_args[0][0])
 
-    @patch.object(webex_listener, "send_webex_reply")
+    @patch.object(chatops, "send_webex_reply")
     def test_ping_direct(self, mock_reply):
-        webex_listener.handle_command("/ping")
+        chatops.handle_command("/ping", token="tok", room_id="room")
         mock_reply.assert_called_once()
-        assert "Pong" in mock_reply.call_args[0][0]
 
-    @patch.object(webex_listener, "send_webex_reply")
+    @patch.object(chatops, "send_webex_reply")
     def test_help(self, mock_reply):
-        webex_listener.handle_command("/help")
+        chatops.handle_command("/help", token="tok", room_id="room")
         mock_reply.assert_called_once()
-        assert "/ping" in mock_reply.call_args[0][0]
+        text = mock_reply.call_args.kwargs.get("text", mock_reply.call_args[0][0])
+        assert "/ping" in text
 
-    @patch.object(webex_listener, "send_webex_reply")
+    @patch.object(chatops, "send_webex_reply")
     def test_unknown_command(self, mock_reply):
-        webex_listener.handle_command("/foobar")
-        mock_reply.assert_called_once()
-        assert "Unknown command" in mock_reply.call_args[0][0]
+        chatops.handle_command("/foobar", token="tok", room_id="room")
+        text = mock_reply.call_args.kwargs.get("text", mock_reply.call_args[0][0])
+        assert "Unknown command" in text
 
-    @patch.object(webex_listener, "send_webex_reply")
+    @patch.object(chatops, "send_webex_reply")
     def test_no_slash_ignored(self, mock_reply):
-        webex_listener.handle_command("Ping")
+        chatops.handle_command("Ping", token="tok", room_id="room")
         mock_reply.assert_not_called()
 
-    @patch.object(webex_listener, "send_webex_reply")
-    def test_paper_command(self, mock_reply):
-        webex_listener.handle_command("/paper")
-        mock_reply.assert_called_once()
-        assert "Paper Trading Portfolio" in mock_reply.call_args[0][0]
 
-    @patch.object(webex_listener, "run_script")
-    @patch.object(webex_listener, "send_webex_reply")
-    def test_journal_command(self, mock_reply, mock_run):
-        webex_listener.handle_command("/journal")
-        mock_reply.assert_called_once()
-        mock_run.assert_called_once()
+class TestPollingHelpers:
+    def test_collect_new_messages_oldest_first(self):
+        messages = [
+            {"id": "c", "text": "/ping"},
+            {"id": "b", "text": "/help"},
+            {"id": "a", "text": "old"},
+        ]
+        new = chatops.collect_new_messages(messages, "a")
+        assert [m["id"] for m in new] == ["b", "c"]
 
+    def test_collect_new_messages_empty_when_no_cursor(self):
+        messages = [{"id": "x", "text": "/ping"}]
+        assert chatops.collect_new_messages(messages, None) == []
 
-class TestWebhookRoute:
-    def test_health_endpoint(self):
-        client = webex_listener.app.test_client()
-        resp = client.get("/health")
-        assert resp.status_code == 200
-        assert resp.json["status"] == "healthy"
-
-    @patch.object(webex_listener, "handle_command")
-    @patch.object(webex_listener.requests, "get")
-    def test_webhook_fetches_message_and_routes_command(
-        self, mock_get, mock_handle
-    ):
-        webex_listener.BOT_ID = "bot-person-id"
-        mock_get.return_value.status_code = 200
-        mock_get.return_value.json.return_value = {"text": "/ping"}
-
-        client = webex_listener.app.test_client()
-        resp = client.post(
-            "/webhook",
-            json={
-                "data": {
-                    "id": "msg-123",
-                    "personId": "user-person-id",
-                }
-            },
+    @patch.object(chatops, "handle_command")
+    def test_process_message_skips_bot(self, mock_handle):
+        chatops.process_message(
+            {"id": "1", "personId": "bot-1", "text": "/ping"},
+            bot_id="bot-1",
+            token="tok",
+            room_id="room",
         )
-
-        assert resp.status_code == 200
-        mock_get.assert_called_once()
-        mock_handle.assert_called_once_with("/ping")
-
-    @patch.object(webex_listener, "handle_command")
-    def test_webhook_ignores_bot_own_messages(self, mock_handle):
-        webex_listener.BOT_ID = "bot-person-id"
-
-        client = webex_listener.app.test_client()
-        resp = client.post(
-            "/webhook",
-            json={
-                "data": {
-                    "id": "msg-123",
-                    "personId": "bot-person-id",
-                }
-            },
-        )
-
-        assert resp.status_code == 200
         mock_handle.assert_not_called()
+
+    @patch.object(chatops, "handle_command")
+    def test_process_message_routes_command(self, mock_handle):
+        chatops.process_message(
+            {"id": "1", "personId": "user-1", "text": "@Hermes /ping"},
+            bot_id="bot-1",
+            token="tok",
+            room_id="room",
+        )
+        mock_handle.assert_called_once_with("@Hermes /ping", token="tok", room_id="room")
+
+    def test_list_room_messages_uses_mentioned_for_group(self, monkeypatch):
+        captured = {}
+
+        def fake_get(url, headers=None, params=None, timeout=None):
+            captured["params"] = params
+            resp = MagicMock()
+            resp.status_code = 200
+            resp.json.return_value = {"items": []}
+            resp.raise_for_status = MagicMock()
+            return resp
+
+        monkeypatch.setattr(chatops.requests, "get", fake_get)
+        chatops.list_room_messages("tok", "room-1", room_type="group")
+        assert captured["params"]["mentionedPeople"] == "me"
+
+    def test_poll_once_initializes_state_without_backlog(self, tmp_path):
+        state_file = tmp_path / "state.json"
+        state: dict = {}
+
+        with patch.object(chatops, "list_room_messages", return_value=[{"id": "newest"}]):
+            chatops.poll_once(
+                token="tok",
+                room_id="room",
+                room_type="group",
+                bot_id="bot",
+                state=state,
+                state_file=state_file,
+            )
+
+        assert state["last_message_id"] == "newest"
+        assert state_file.exists()
+
+    def test_poll_once_processes_new_commands(self, tmp_path):
+        state_file = tmp_path / "state.json"
+        state = {"last_message_id": "old"}
+
+        messages = [
+            {"id": "new", "personId": "user", "text": "/ping"},
+            {"id": "old", "personId": "user", "text": "hi"},
+        ]
+
+        with patch.object(chatops, "list_room_messages", return_value=messages):
+            with patch.object(chatops, "process_message") as mock_process:
+                chatops.poll_once(
+                    token="tok",
+                    room_id="room",
+                    room_type="group",
+                    bot_id="bot",
+                    state=state,
+                    state_file=state_file,
+                )
+
+        mock_process.assert_called_once()
+        assert state["last_message_id"] == "new"

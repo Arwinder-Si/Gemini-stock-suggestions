@@ -1,6 +1,6 @@
 """Unit tests for market snapshot job."""
 
-from market_snapshot_job import MarketSnapshot, build_market_snapshot
+from hermes.pipelines.steps.market_snapshot_job import MarketSnapshot, build_market_snapshot
 
 
 class TestMarketSnapshot:

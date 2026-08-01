@@ -24,8 +24,7 @@ cat << 'EOF' > run_morning.sh
 #!/bin/bash
 cd "$(dirname "$0")"
 source venv/bin/activate
-python global_signals.py
-python notify_webex.py morning
+python -m hermes.cli morning
 EOF
 chmod +x run_morning.sh
 
@@ -33,16 +32,7 @@ cat << 'EOF' > run_evening.sh
 #!/bin/bash
 cd "$(dirname "$0")"
 source venv/bin/activate
-python update_security_ids.py
-python news_sentiment.py
-python comprehensive_screener.py
-python intraday_trigger.py
-python comprehensive_screener.py --universe small
-python intraday_trigger.py --universe small
-python market_snapshot_job.py
-python outcome_enricher.py
-python -c "import market_db; market_db.save_screener_results('screener_results.csv'); market_db.save_screener_results('screener_results_smallcap.csv'); market_db.save_news_results('news_features.csv')"
-python notify_webex.py evening
+python -m hermes.cli evening
 EOF
 chmod +x run_evening.sh
 
@@ -51,7 +41,7 @@ cat << 'EOF' > run_live_bot.sh
 cd "$(dirname "$0")"
 source venv/bin/activate
 # Run the live bot for exactly 6.5 hours (9:00 AM to 3:30 PM), then kill it
-timeout 23400 python main.py
+timeout 23400 python -m hermes.cli live
 EOF
 chmod +x run_live_bot.sh
 
@@ -59,16 +49,16 @@ cat << 'EOF' > run_pnl.sh
 #!/bin/bash
 cd "$(dirname "$0")"
 source venv/bin/activate
-python notify_webex.py pnl
+python -m hermes.cli pnl
 EOF
 chmod +x run_pnl.sh
 
-# 4. Set up ChatOps Listener Daemon (Systemd)
-echo "🤖 Installing Webex ChatOps Listener (Flask webhook server)..."
+# 4. Set up ChatOps Polling Daemon (Systemd)
+echo "🤖 Installing Webex ChatOps poller (outbound API, no webhooks)..."
 SERVICE_FILE="/etc/systemd/system/nse-bot-listener.service"
 sudo bash -c "cat << EOFSERVICE > $SERVICE_FILE
 [Unit]
-Description=Hermes Webex ChatOps Listener
+Description=Hermes Webex ChatOps Poller
 After=network.target
 
 [Service]
@@ -76,7 +66,7 @@ Type=simple
 User=$USER
 WorkingDirectory=$(pwd)
 EnvironmentFile=$(pwd)/.env
-ExecStart=$(pwd)/venv/bin/python $(pwd)/webex_listener.py
+ExecStart=$(pwd)/venv/bin/python -m hermes.cli chatops
 Restart=always
 RestartSec=5
 
@@ -86,36 +76,22 @@ EOFSERVICE"
 sudo systemctl daemon-reload
 sudo systemctl enable nse-bot-listener.service
 
-# Ensure BOT_PUBLIC_URL is set so Webex can deliver inbound commands
 ENV_FILE="$(pwd)/.env"
 if [ -f "$ENV_FILE" ]; then
-    if ! grep -qE '^BOT_PUBLIC_URL=.+' "$ENV_FILE"; then
-        echo "⚙️  BOT_PUBLIC_URL not set — detecting public IP for webhook registration..."
-        PUBLIC_IP=$(curl -s --max-time 5 https://ifconfig.me/ip 2>/dev/null \
-            || curl -s --max-time 5 https://icanhazip.com 2>/dev/null \
-            || echo "")
-        if [ -n "$PUBLIC_IP" ]; then
-            echo "" >> "$ENV_FILE"
-            echo "# Public URL for Webex webhook delivery (required for /ping, /pnl, etc.)" >> "$ENV_FILE"
-            echo "BOT_PUBLIC_URL=http://${PUBLIC_IP}:5050" >> "$ENV_FILE"
-            echo "✅ Added BOT_PUBLIC_URL=http://${PUBLIC_IP}:5050 to .env"
-            echo "   If webhook registration fails, use HTTPS instead (e.g. ngrok http 5050)."
-        else
-            echo "⚠️  Could not detect public IP. Add BOT_PUBLIC_URL to .env manually, then run:"
-            echo "   sudo systemctl restart nse-bot-listener.service"
-        fi
-    else
-        echo "✅ BOT_PUBLIC_URL already configured in .env"
+    if ! grep -qE '^BOT_POLL_INTERVAL_SEC=' "$ENV_FILE"; then
+        echo "" >> "$ENV_FILE"
+        echo "# Webex command polling interval (seconds)" >> "$ENV_FILE"
+        echo "BOT_POLL_INTERVAL_SEC=2" >> "$ENV_FILE"
+        echo "✅ Added BOT_POLL_INTERVAL_SEC=2 to .env"
+    fi
+    if ! grep -qE '^WEBEX_TOKEN=.+' "$ENV_FILE"; then
+        echo "⚠️  WEBEX_TOKEN not set — ChatOps commands will not work until .env is configured."
     fi
 else
     echo "⚠️  No .env file found. Create one from .env.example before using ChatOps."
 fi
 
 sudo systemctl restart nse-bot-listener.service
-
-# Open firewall port for Webex webhooks
-echo "🔓 Opening firewall port 5050 for Webex webhooks..."
-sudo ufw allow 5050/tcp 2>/dev/null || true
 
 # 5. Set up Crontab
 # We will explicitly set the VM timezone to Asia/Kolkata so cron matches IST exactly.
@@ -149,12 +125,12 @@ echo "CRITICAL: Create and configure your .env file:"
 echo "  cp .env.example .env"
 echo "  nano .env"
 echo ""
-echo "For ChatOps commands (/ping, /pnl, /plan) to work, set:"
-echo "  BOT_PUBLIC_URL=https://YOUR_PUBLIC_IP:5050"
-echo "  (or an ngrok HTTPS URL if behind NAT / no public IP)"
+echo "For ChatOps commands (/ping, /pnl, /plan) to work:"
+echo "  1. Set WEBEX_TOKEN and WEBEX_ROOM_ID in .env"
+echo "  2. Add the bot to your Webex room"
+echo "  3. In group spaces, @mention the bot: @Hermes /ping"
 echo ""
-echo "Verify the listener:"
-echo "  curl http://localhost:5050/health"
+echo "Verify the poller:"
 echo "  sudo journalctl -u nse-bot-listener.service -n 20 --no-pager"
-echo "  (look for: Webhook registered: .../webhook)"
+echo "  (look for: Listening in room ... poll every 2.0s)"
 echo "---------------------------------------------------"

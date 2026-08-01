@@ -1,6 +1,6 @@
 import pytest
-from risk import RiskEngine, RiskConfig
-from analytics_models import Recommendation
+from hermes.domain.risk import RiskEngine, RiskConfig
+from hermes.data.analytics_models import Recommendation
 
 def test_risk_engine_checks():
     cfg = RiskConfig(max_daily_trades=2, max_daily_loss_rupees=5000.0)

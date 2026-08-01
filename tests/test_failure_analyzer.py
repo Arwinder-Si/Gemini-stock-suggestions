@@ -1,7 +1,7 @@
 """Unit tests for failure root-cause analyzer."""
 
-from failure_analyzer import analyze_failure, POOR_SL_PLACEMENT, MARKET_REGIME_MISMATCH, HIGH_VOLATILITY, STRATEGY_FAILURE
-from analytics_models import PaperTrade, Recommendation
+from hermes.analytics.failure_analyzer import analyze_failure, POOR_SL_PLACEMENT, MARKET_REGIME_MISMATCH, HIGH_VOLATILITY, STRATEGY_FAILURE
+from hermes.data.analytics_models import PaperTrade, Recommendation
 
 
 class TestAnalyzeFailure:

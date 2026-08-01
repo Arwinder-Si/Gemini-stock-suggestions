@@ -26,37 +26,29 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.11'
           cache: 'pip'
 
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run News Sentiment Pipeline
-        run: python news_sentiment.py
-
-      - name: Run Comprehensive Screener
-        run: python comprehensive_screener.py
-
-      - name: Generate Intraday Trade Plan
-        run: python intraday_trigger.py
-
-      - name: Save to Database
-        run: |
-          python -c "import market_db; market_db.save_screener_results('screener_results.csv'); market_db.save_news_results('news_features.csv')"
-
-      - name: Send Evening Webex Notification
+      - name: Run Evening Pipeline
         env:
           WEBEX_TOKEN: ${{ secrets.WEBEX_TOKEN }}
           WEBEX_ROOM_ID: ${{ secrets.WEBEX_ROOM_ID }}
-        run: python notify_webex.py evening
+        # market_snapshot and outcome_enricher require MongoDB (absent in CI) and
+        # are skipped automatically, but we exclude them explicitly for clarity.
+        run: python -m hermes.cli evening --skip market_snapshot,outcome_enricher
 
-      - name: Commit Database changes
+      - name: Commit trade plan and database changes
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add market_data.db || true
-          git commit -m "Auto-update market_data.db [skip ci]" || echo "No changes to commit"
+          # Trade plans and screener outputs are gitignored locally but committed
+          # from CI so the morning workflow can read them on a fresh checkout.
+          git add -f trade_plan.json trade_plan_smallcap.json screener_results.csv market_regime.txt || true
+          git commit -m "Auto-update trade plan and market_data.db [skip ci]" || echo "No changes to commit"
           git push
 
       - name: Upload artifacts
@@ -68,4 +60,5 @@ jobs:
             screener_results.csv
             news_features.csv
             trade_plan.json
+            trade_plan_smallcap.json
           retention-days: 30

@@ -1,3 +1,8 @@
 {
-    "J&KBANK": "5633"
+    "trading_date": "2026-08-02",
+    "generated_at": "2026-08-01 17:17:09 IST",
+    "universe": "small",
+    "symbols": {
+        "PERSISTENT": "18365"
+    }
 }

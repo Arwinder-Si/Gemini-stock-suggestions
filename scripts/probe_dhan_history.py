@@ -13,8 +13,8 @@ import requests
 # Add parent directory to path so config and auth_manager can be imported
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from config import get_config
-from clock import now_ist
+from hermes.config import get_config
+from hermes.clock import now_ist
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s [%(name)s] %(message)s")
 logger = logging.getLogger("probe_dhan_history")
@@ -69,7 +69,7 @@ def run_probe():
         return
 
     try:
-        from auth_manager import get_fresh_dhan_token
+        from hermes.integrations.auth_manager import get_fresh_dhan_token
         access_token = get_fresh_dhan_token(cfg.dhan_client_id, cfg.dhan_pin, cfg.dhan_totp_secret)
     except Exception as e:
         logger.error(f"Failed to generate Dhan Access Token: {e}")

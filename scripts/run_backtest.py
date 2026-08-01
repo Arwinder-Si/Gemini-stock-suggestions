@@ -10,11 +10,11 @@ from datetime import date, datetime, timedelta
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from config import get_config
-from data_cache import CandleCache
-from backtest import ORBBacktester
-from strategy import ORBConfig
-from costs import CostModel
+from hermes.config import get_config
+from hermes.data.data_cache import CandleCache
+from hermes.research.backtest import ORBBacktester
+from hermes.domain.strategy import ORBConfig
+from hermes.domain.costs import CostModel
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s [%(name)s] %(message)s")
 logger = logging.getLogger("run_backtest")

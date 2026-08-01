@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import pytest
-from scoring import score_stock, ScoreInput, ScoreResult
+from hermes.domain.scoring import score_stock, ScoreInput, ScoreResult
 
 def test_score_stock_basic():
     # Generate 100 days of mock stock price & volume data

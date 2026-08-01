@@ -1,5 +1,5 @@
 import pytest
-from costs import CostModel, Side, ChargeBreakdown
+from hermes.domain.costs import CostModel, Side, ChargeBreakdown
 
 def test_cost_model_buy_side():
     cm = CostModel(slippage_bps=0)  # No slippage to test exact statutory charges

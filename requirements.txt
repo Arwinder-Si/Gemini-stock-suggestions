@@ -11,4 +11,3 @@ textblob>=0.18.0
 requests>=2.31.0
 python-dotenv>=1.0.0
 pyotp>=2.9.0
-flask>=3.0.0
