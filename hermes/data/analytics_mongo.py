@@ -57,26 +57,45 @@ class MongoAnalyticsStore(AnalyticsStore):
         self._create_indexes()
 
     def _create_indexes(self) -> None:
-        try:
-            self.db.recommendations.create_index([("trading_date", 1), ("symbol", 1)])
-            self.db.recommendations.create_index(
+        """Ensure indexes exist; use explicit names to avoid Atlas conflicts with legacy indexes."""
+        index_specs: list[tuple[str, list, dict]] = [
+            ("recommendations", [("trading_date", 1), ("symbol", 1)], {"name": "idx_rec_date_symbol"}),
+            (
+                "recommendations",
                 [("trading_date", 1), ("symbol", 1), ("pick_source", 1)],
-                unique=True,
-                partialFilterExpression={"pick_source": {"$gt": ""}},
-            )
-            self.db.paper_trades.create_index([("trade_id", 1)], unique=True)
-            self.db.paper_trades.create_index([("trading_date", 1)])
-            self.db.trade_journal.create_index([("journal_id", 1)], unique=True)
-            self.db.portfolio_snapshots.create_index([("trading_date", 1)])
-            self.db.failure_analyses.create_index([("trade_id", 1)])
-            self.db.failure_analyses.create_index([("trading_date", 1)])
-            self.db.market_snapshots.create_index([("trading_date", 1)], unique=True)
-            self.db.evaluations.create_index([("recommendation_id", 1)], unique=True)
-            self.db.evaluations.create_index([("trading_date", 1)])
-            self.db.evaluations.create_index([("pick_source", 1)])
-            logger.info("MongoDB analytics indexes initialized.")
-        except Exception as e:
-            logger.warning(f"Could not create Mongo indexes: {e}")
+                {
+                    "name": "idx_rec_pipeline_pick_unique",
+                    "unique": True,
+                    "partialFilterExpression": {"pick_source": {"$gt": ""}},
+                },
+            ),
+            ("paper_trades", [("trade_id", 1)], {"name": "idx_paper_trades_trade_id", "unique": True}),
+            ("paper_trades", [("trading_date", 1)], {"name": "idx_paper_trades_date"}),
+            ("trade_journal", [("journal_id", 1)], {"name": "idx_journal_id", "unique": True}),
+            ("portfolio_snapshots", [("trading_date", 1)], {"name": "idx_portfolio_date"}),
+            ("failure_analyses", [("trade_id", 1)], {"name": "idx_failure_trade_id"}),
+            ("failure_analyses", [("trading_date", 1)], {"name": "idx_failure_date"}),
+            ("market_snapshots", [("trading_date", 1)], {"name": "idx_market_snap_date", "unique": True}),
+            (
+                "evaluations",
+                [("recommendation_id", 1)],
+                {"name": "idx_eval_recommendation_id_unique", "unique": True},
+            ),
+            ("evaluations", [("trading_date", 1)], {"name": "idx_eval_date"}),
+            ("evaluations", [("pick_source", 1)], {"name": "idx_eval_pick_source"}),
+        ]
+        created = 0
+        for coll_name, keys, kwargs in index_specs:
+            try:
+                self.db[coll_name].create_index(keys, **kwargs)
+                created += 1
+            except Exception as e:
+                code = getattr(e, "code", None)
+                if code == 86:
+                    logger.debug("Index %s on %s already exists with different spec", kwargs.get("name"), coll_name)
+                else:
+                    logger.warning("Could not create index %s on %s: %s", kwargs.get("name"), coll_name, e)
+        logger.info("MongoDB analytics indexes checked (%d specs).", len(index_specs))
 
     def save_recommendation(self, rec: Recommendation) -> str:
         doc = asdict(rec)

@@ -162,11 +162,18 @@ def test_enrich_due_picks_skips_evaluated(mock_fetch):
 
 
 def test_week_range_monday_friday():
-    # Saturday Aug 1 2026 -> week Mon Jul 27 to Fri Jul 31
+    # Saturday Aug 1 2026 -> last trading week Mon Jul 28 to Fri Aug 1
     mon, fri = week_range(date(2026, 8, 1))
+    assert mon == date(2026, 7, 28)
+    assert fri == date(2026, 8, 1)
     assert mon.weekday() == 0
     assert fri.weekday() == 4
-    assert (fri - mon).days == 4
+
+
+def test_week_range_midweek():
+    mon, fri = week_range(date(2026, 7, 30))
+    assert mon == date(2026, 7, 28)
+    assert fri == date(2026, 8, 1)
 
 
 def test_generate_weekly_pick_report_with_data():
@@ -213,6 +220,21 @@ def test_generate_weekly_pick_report_with_data():
     assert "M&M" in report
     assert "86" in report
     assert "Win rate" in report
+
+
+def test_generate_weekly_pick_report_upcoming_picks():
+    store = InMemoryAnalyticsStore()
+    rec = Recommendation(
+        recommendation_id="REC-FUTURE",
+        trading_date="2026-08-04",
+        symbol="M&M",
+        pick_source=PICK_EVENING_LARGE,
+        strategy="PIPELINE",
+    )
+    store.save_pipeline_pick(rec)
+    report = generate_weekly_pick_report(date(2026, 7, 28), date(2026, 8, 1), store=store)
+    assert "upcoming session" in report.lower() or "2026-08-04" in report
+    assert "pending until then" in report.lower() or "next trading day" in report.lower()
 
 
 def test_generate_weekly_pick_report_no_mongo():

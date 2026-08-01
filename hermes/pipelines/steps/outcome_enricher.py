@@ -131,14 +131,22 @@ def enrich_due_picks(store, through_date: date | None = None) -> int:
     picks = store.get_pipeline_picks(end_date=through_str)
 
     count = 0
+    skipped_future = 0
     for rec in picks:
         if rec.trading_date > through_str:
+            skipped_future += 1
             continue
         if rec.recommendation_id in evaluated_ids:
             continue
         if enrich_pick(store, rec):
             count += 1
             evaluated_ids.add(rec.recommendation_id)
+    if skipped_future:
+        logger.info(
+            "Skipped %d pick(s) with trading_date after %s (session not yet traded)",
+            skipped_future,
+            through_str,
+        )
     return count
 
 

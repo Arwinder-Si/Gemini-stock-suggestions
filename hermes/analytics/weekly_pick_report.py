@@ -33,8 +33,14 @@ SOURCE_LABELS = {
 
 
 def week_range(ref: date | None = None) -> tuple[date, date]:
-    """Monday–Friday of the ISO week containing ref (defaults to today IST)."""
+    """Monday–Friday of the reporting week (defaults to today IST).
+
+    On weekends, uses the Mon–Fri block that just ended (so a Saturday manual
+    run still reports last week's picks). The Friday 5 PM cron uses the same week.
+    """
     ref = ref or trading_date_ist()
+    if ref.weekday() >= 5:
+        ref = ref - timedelta(days=ref.weekday() - 4)
     monday = ref - timedelta(days=ref.weekday())
     friday = monday + timedelta(days=4)
     return monday, friday
@@ -98,7 +104,21 @@ def generate_weekly_pick_report(
     ]
 
     if not picks:
-        lines.append("No pipeline picks recorded for this week.")
+        all_picks = store.get_pipeline_picks()
+        upcoming = [p for p in all_picks if p.trading_date > end_str]
+        if upcoming:
+            dates = sorted({p.trading_date for p in upcoming})
+            lines.append(f"No pipeline picks for **{start_str}** to **{end_str}**.")
+            lines.append(
+                f"You have **{len(upcoming)}** pick(s) saved for upcoming session(s): "
+                f"{', '.join(dates[:3])}{'…' if len(dates) > 3 else ''}."
+            )
+            lines.append(
+                "_Outcomes are recorded after each session closes (~3:45 PM). "
+                "Evening picks target the **next trading day**, so they show as pending until then._"
+            )
+        else:
+            lines.append("No pipeline picks recorded for this week.")
         return "\n".join(lines)
 
     # Summary by source
