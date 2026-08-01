@@ -75,6 +75,7 @@ def check_mongodb(uri: str) -> bool:
         _fail("MONGODB_URI not set — paper trades will not persist")
         return False
     try:
+        import hermes.data  # noqa: F401 — ensure package exists on VM
         from hermes.data.analytics_mongo import MongoAnalyticsStore
 
         store = MongoAnalyticsStore(uri)
@@ -83,6 +84,13 @@ def check_mongodb(uri: str) -> bool:
         cols = store.db.list_collection_names()
         _ok(f"Database '{store.db.name}' reachable ({len(cols)} collections)")
         return True
+    except ModuleNotFoundError as exc:
+        _fail(f"Python package missing: {exc}")
+        _warn(
+            "hermes/data/ was not in git (gitignore data/ bug). "
+            "Run: git pull  after updating the repo, or check hermes/data/__init__.py exists."
+        )
+        return False
     except Exception as exc:
         _fail(f"MongoDB connection failed: {exc}")
         _warn("Check Atlas Network Access allows this VM's outbound IP")

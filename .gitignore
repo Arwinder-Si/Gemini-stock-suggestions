@@ -36,8 +36,8 @@ Thumbs.db
 # SQLite operational database (regenerated)
 market_data.db
 
-# Parquet candle cache (large, local-only)
-data/
+# Parquet candle cache (large, local-only) — repo root only, not hermes/data/
+/data/
 
 # Hermes run artifacts, manifests, state (local-only)
 var/
