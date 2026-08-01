@@ -35,6 +35,11 @@ import requests
 from dotenv import load_dotenv
 
 from hermes.config import get_config
+from hermes.integrations.webex_cards import (
+    help_menu_markdown,
+    help_message_attachments,
+    hermes_about_markdown,
+)
 
 load_dotenv()
 
@@ -55,16 +60,81 @@ def _api_headers(token: str) -> dict[str, str]:
     }
 
 
-def send_webex_reply(text: str, *, token: str, room_id: str) -> None:
-    """Send a markdown message to the Webex room."""
+def send_webex_message(
+    *,
+    token: str,
+    room_id: str,
+    markdown: str,
+    attachments: list[dict] | None = None,
+) -> None:
+    """Send a markdown message, optionally with adaptive card attachments."""
+    payload: dict = {"roomId": room_id, "markdown": markdown}
+    if attachments:
+        payload["attachments"] = attachments
     resp = requests.post(
         f"{WEBEX_API}/messages",
         headers=_api_headers(token),
-        json={"roomId": room_id, "markdown": text},
+        json=payload,
         timeout=15,
     )
     if resp.status_code != 200:
         logger.error("Webex send failed: %s — %s", resp.status_code, resp.text)
+
+
+def send_webex_reply(text: str, *, token: str, room_id: str) -> None:
+    """Send a markdown message to the Webex room."""
+    send_webex_message(token=token, room_id=room_id, markdown=text)
+
+
+def send_help_card(*, token: str, room_id: str, include_about: bool = True) -> None:
+    """Send help menu with adaptive card buttons and Hermes description."""
+    parts = []
+    if include_about:
+        parts.append(hermes_about_markdown())
+        parts.append("---")
+    parts.append(help_menu_markdown())
+    send_webex_message(
+        token=token,
+        room_id=room_id,
+        markdown="\n\n".join(parts),
+        attachments=help_message_attachments(),
+    )
+
+
+# Natural-language phrases → show help (group spaces: must @mention the bot)
+HELP_PHRASES = (
+    "help",
+    "what can you do",
+    "what do you do",
+    "what are you",
+    "how do i use",
+    "how to use",
+    "commands",
+    "options",
+    "menu",
+    "hello",
+    "hi",
+    "hey",
+)
+
+
+def _strip_mentions(text: str) -> str:
+    """Remove @mention tokens (Webex encodes mentions in plain text)."""
+    import re
+
+    cleaned = re.sub(r"<[^>|]+\|[^>]+>", "", text)
+    cleaned = re.sub(r"@\S+", "", cleaned)
+    return cleaned.strip().lower()
+
+
+def is_help_or_unknown(text: str) -> bool:
+    """True when the user @mentioned the bot but did not send a /command."""
+    if "/" in text:
+        return False
+    cleaned = _strip_mentions(text)
+    if not cleaned:
+        return True
+    return any(phrase in cleaned for phrase in HELP_PHRASES) or len(cleaned.split()) <= 6
 
 
 def run_script(command_list: list[str]) -> None:
@@ -144,26 +214,18 @@ def handle_command(text: str, *, token: str, room_id: str) -> None:
             "from hermes.analytics.analytics_report import print_stats_summary; print_stats_summary()",
         ])
     elif cmd == "/help":
+        send_help_card(token=token, room_id=room_id, include_about=True)
+    else:
         send_webex_reply(
-            "**📋 Available Commands**\n\n"
-            "In group spaces, @mention the bot first: `@Hermes /ping`\n\n"
-            "`/ping` — Check if the bot is alive\n"
-            "`/pnl` — Live Dhan P&L + Holdings\n"
-            "`/paper` — Paper Trading Portfolio Status\n"
-            "`/journal` — Today's Trade Journal Report\n"
-            "`/stats` — Analytics summary (win rate, failure tags)\n"
-            "`/plan` — Current Evening Trade Plan\n"
-            "`/morning` — Morning gap + refined trade plan\n"
-            "`/kill` — ⚠️ Emergency shutdown (flatten + halt)\n"
-            "`/help` — Show this message",
+            f"❓ Unknown command `{cmd}`.\n\n" + help_menu_markdown(),
             token=token,
             room_id=room_id,
         )
-    else:
-        send_webex_reply(
-            f"❓ Unknown command `{cmd}`.\nType `/help` for available commands.",
+        send_webex_message(
             token=token,
             room_id=room_id,
+            markdown="Tap a button to run a supported command:",
+            attachments=help_message_attachments(),
         )
 
 
@@ -258,13 +320,32 @@ def process_message(
     token: str,
     room_id: str,
 ) -> None:
-    """Handle one incoming message if it contains a command."""
+    """Handle @mention messages: slash commands, card submits, or help."""
     if message.get("personId") == bot_id:
         return
     text = (message.get("text") or "").strip()
-    if "/" not in text:
+
+    # Adaptive card Submit may post the command as plain text (e.g. "/plan")
+    if text.startswith("/"):
+        handle_command(text, token=token, room_id=room_id)
         return
-    handle_command(text, token=token, room_id=room_id)
+
+    if "/" in text:
+        handle_command(text, token=token, room_id=room_id)
+        return
+
+    # Card submit payload sometimes appears in message body
+    for attachment in message.get("attachments") or []:
+        content = attachment.get("content") or {}
+        if isinstance(content, dict):
+            cmd = content.get("command")
+            if cmd:
+                handle_command(str(cmd), token=token, room_id=room_id)
+                return
+
+    if is_help_or_unknown(text):
+        logger.info("Help request: '%s'", text[:80])
+        send_help_card(token=token, room_id=room_id, include_about=True)
 
 
 def poll_once(

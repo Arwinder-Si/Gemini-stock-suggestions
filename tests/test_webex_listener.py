@@ -22,18 +22,18 @@ class TestHandleCommand:
         chatops.handle_command("/ping", token="tok", room_id="room")
         mock_reply.assert_called_once()
 
-    @patch.object(chatops, "send_webex_reply")
-    def test_help(self, mock_reply):
+    @patch.object(chatops, "send_help_card")
+    def test_help(self, mock_help):
         chatops.handle_command("/help", token="tok", room_id="room")
-        mock_reply.assert_called_once()
-        text = mock_reply.call_args.kwargs.get("text", mock_reply.call_args[0][0])
-        assert "/ping" in text
+        mock_help.assert_called_once_with(token="tok", room_id="room", include_about=True)
 
+    @patch.object(chatops, "send_webex_message")
     @patch.object(chatops, "send_webex_reply")
-    def test_unknown_command(self, mock_reply):
+    def test_unknown_command(self, mock_reply, mock_message):
         chatops.handle_command("/foobar", token="tok", room_id="room")
         text = mock_reply.call_args.kwargs.get("text", mock_reply.call_args[0][0])
         assert "Unknown command" in text
+        mock_message.assert_called_once()
 
     @patch.object(chatops, "send_webex_reply")
     def test_no_slash_ignored(self, mock_reply):
