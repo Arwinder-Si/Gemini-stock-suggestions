@@ -1,15 +1,16 @@
 """
 Webex Adaptive Cards for Hermes ChatOps.
 
-Submit buttons use the command as the button title so Webex may post it as a
-room message the poller can pick up (works in many clients without webhooks).
+Card buttons (Action.Submit) require an inbound webhook — not available on the
+internal polling VM. The help card lists copy-paste commands such as
+``@Hermes plan`` instead of fake clickable buttons.
 """
 
 from __future__ import annotations
 
 from typing import Any
 
-# Commands exposed as card buttons (safe, everyday actions)
+# Commands exposed in the help menu
 MENU_COMMANDS: list[tuple[str, str, str]] = [
     ("/ping", "Health Check", "Verify the bot and VM are online"),
     ("/plan", "Evening Trade Plan", "Latest screener picks and scores"),
@@ -19,6 +20,12 @@ MENU_COMMANDS: list[tuple[str, str, str]] = [
     ("/stats", "Analytics", "Win rate and performance summary"),
     ("/help", "About Hermes", "What this bot does and all commands"),
 ]
+
+
+def user_command_text(cmd: str, *, bot_name: str = "Hermes") -> str:
+    """Human-typed command for group spaces (no leading slash required)."""
+    alias = cmd.lstrip("/")
+    return f"@{bot_name} {alias}"
 
 
 def hermes_about_markdown() -> str:
@@ -32,22 +39,28 @@ def hermes_about_markdown() -> str:
         "and yesterday's screener to refine today's watchlist.\n\n"
         "**Market hours (9:00–15:30)** — Runs Opening Range Breakout (ORB) paper trades "
         "on the morning plan. Signals, entries, and P&L are logged to MongoDB.\n\n"
-        "**ChatOps (this bot)** — Ask anytime with `@Hermes /command` or tap a button below.\n\n"
+        "**ChatOps (this bot)** — In this space, @mention Hermes and send a command "
+        "(example: `@Hermes plan`).\n\n"
         "_Paper mode only — no real broker orders._"
     )
 
 
-def help_menu_markdown() -> str:
+def help_menu_markdown(*, bot_name: str = "Hermes") -> str:
     return (
-        "Here is what I can do — **type `@Hermes /command`** in this space "
-        "(card buttons need a public webhook; on this VM use typed commands):\n\n"
-        + "\n".join(f"- `{cmd}` — {label}" for cmd, label, _ in MENU_COMMANDS)
-        + "\n\n_Advanced: `/pnl` (live Dhan), `/kill` (emergency halt)_"
+        "**How to run a command**\n\n"
+        "In group spaces you must @mention Hermes. Card buttons do not work on this "
+        "VM (no public webhook). Copy and send one of these:\n\n"
+        + "\n".join(
+            f"- `{user_command_text(cmd, bot_name=bot_name)}` — {label}"
+            for cmd, label, _ in MENU_COMMANDS
+        )
+        + "\n\n_Short form works too: `@Hermes plan` or `@Hermes /plan`._\n"
+        + "_Advanced: `@Hermes pnl`, `@Hermes kill`_"
     )
 
 
-def build_help_adaptive_card() -> dict[str, Any]:
-    """Adaptive Card with clickable Submit buttons for each command."""
+def build_help_adaptive_card(*, bot_name: str = "Hermes") -> dict[str, Any]:
+    """Adaptive Card listing copy-paste commands (no Submit buttons)."""
     body: list[dict[str, Any]] = [
         {
             "type": "TextBlock",
@@ -59,8 +72,8 @@ def build_help_adaptive_card() -> dict[str, Any]:
         {
             "type": "TextBlock",
             "text": (
-                "In group spaces, type @Hermes /command (example: @Hermes /plan). "
-                "Buttons below are quick reference only — they do not run commands "
+                "Copy a command below, paste it in the message box, and send. "
+                "You must include @Hermes — card buttons cannot run commands "
                 "without a public webhook URL."
             ),
             "isSubtle": True,
@@ -69,6 +82,7 @@ def build_help_adaptive_card() -> dict[str, Any]:
     ]
 
     for cmd, label, desc in MENU_COMMANDS:
+        copy_text = user_command_text(cmd, bot_name=bot_name)
         body.append(
             {
                 "type": "ColumnSet",
@@ -96,12 +110,15 @@ def build_help_adaptive_card() -> dict[str, Any]:
                         "width": "auto",
                         "items": [
                             {
-                                "type": "ActionSet",
-                                "actions": [
+                                "type": "Container",
+                                "style": "emphasis",
+                                "items": [
                                     {
-                                        "type": "Action.Submit",
-                                        "title": cmd,
-                                        "data": {"command": cmd},
+                                        "type": "TextBlock",
+                                        "text": copy_text,
+                                        "fontType": "Monospace",
+                                        "horizontalAlignment": "Center",
+                                        "wrap": False,
                                     }
                                 ],
                             }
@@ -119,10 +136,10 @@ def build_help_adaptive_card() -> dict[str, Any]:
     }
 
 
-def help_message_attachments() -> list[dict[str, Any]]:
+def help_message_attachments(*, bot_name: str = "Hermes") -> list[dict[str, Any]]:
     return [
         {
             "contentType": "application/vnd.microsoft.card.adaptive",
-            "content": build_help_adaptive_card(),
+            "content": build_help_adaptive_card(bot_name=bot_name),
         }
     ]

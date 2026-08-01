@@ -73,7 +73,7 @@ class TestPollingHelpers:
             token="tok",
             room_id="room",
         )
-        mock_handle.assert_called_once_with("@Hermes /ping", token="tok", room_id="room")
+        mock_handle.assert_called_once_with("/ping", token="tok", room_id="room")
 
     def test_list_room_messages_raises_on_rate_limit(self, monkeypatch):
         def fake_get(url, headers=None, params=None, timeout=None):
@@ -112,6 +112,7 @@ class TestPollingHelpers:
                 room_id="room",
                 room_type="group",
                 bot_id="bot",
+                bot_name="Hermes",
                 state=state,
                 state_file=state_file,
             )
@@ -135,6 +136,7 @@ class TestPollingHelpers:
                     room_id="room",
                     room_type="group",
                     bot_id="bot",
+                    bot_name="Hermes",
                     state=state,
                     state_file=state_file,
                 )

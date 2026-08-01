@@ -115,18 +115,24 @@ def send_webex_reply(text: str, *, token: str, room_id: str) -> None:
     send_webex_message(token=token, room_id=room_id, markdown=text)
 
 
-def send_help_card(*, token: str, room_id: str, include_about: bool = True) -> None:
-    """Send help menu with adaptive card buttons and Hermes description."""
+def send_help_card(
+    *,
+    token: str,
+    room_id: str,
+    include_about: bool = True,
+    bot_name: str = "Hermes",
+) -> None:
+    """Send help menu with command reference card and Hermes description."""
     parts = []
     if include_about:
         parts.append(hermes_about_markdown())
         parts.append("---")
-    parts.append(help_menu_markdown())
+    parts.append(help_menu_markdown(bot_name=bot_name))
     send_webex_message(
         token=token,
         room_id=room_id,
         markdown="\n\n".join(parts),
-        attachments=help_message_attachments(),
+        attachments=help_message_attachments(bot_name=bot_name),
     )
 
 
@@ -146,6 +152,21 @@ HELP_PHRASES = (
     "hey",
 )
 
+# Shorthand after @Hermes (no slash required)
+COMMAND_ALIASES: dict[str, str] = {
+    "ping": "/ping",
+    "plan": "/plan",
+    "evening": "/plan",
+    "morning": "/morning",
+    "paper": "/paper",
+    "journal": "/journal",
+    "stats": "/stats",
+    "help": "/help",
+    "about": "/help",
+    "pnl": "/pnl",
+    "kill": "/kill",
+}
+
 
 def _strip_mentions(text: str) -> str:
     """Remove @mention tokens (Webex encodes mentions in plain text)."""
@@ -156,9 +177,22 @@ def _strip_mentions(text: str) -> str:
     return cleaned.strip().lower()
 
 
+def extract_command_from_text(text: str) -> str | None:
+    """Parse @Hermes /plan or @Hermes plan into a slash command."""
+    slash_idx = text.find("/")
+    if slash_idx != -1:
+        return text[slash_idx:].strip().lower().split()[0]
+
+    cleaned = _strip_mentions(text).strip().lower()
+    if not cleaned:
+        return None
+    first_word = cleaned.split()[0]
+    return COMMAND_ALIASES.get(first_word)
+
+
 def is_help_or_unknown(text: str) -> bool:
-    """True when the user @mentioned the bot but did not send a /command."""
-    if "/" in text:
+    """True when the user @mentioned the bot but did not send a known command."""
+    if extract_command_from_text(text):
         return False
     cleaned = _strip_mentions(text)
     if not cleaned:
@@ -253,7 +287,7 @@ def handle_command(text: str, *, token: str, room_id: str) -> None:
         send_webex_message(
             token=token,
             room_id=room_id,
-            markdown="Tap a button to run a supported command:",
+            markdown="Copy a command from the card and send it with @Hermes:",
             attachments=help_message_attachments(),
         )
 
@@ -347,33 +381,21 @@ def process_message(
     bot_id: str,
     token: str,
     room_id: str,
+    bot_name: str = "Hermes",
 ) -> None:
-    """Handle @mention messages: slash commands, card submits, or help."""
+    """Handle @mention messages: slash commands, aliases, or help."""
     if message.get("personId") == bot_id:
         return
     text = (message.get("text") or "").strip()
 
-    # Adaptive card Submit may post the command as plain text (e.g. "/plan")
-    if text.startswith("/"):
-        handle_command(text, token=token, room_id=room_id)
+    cmd = extract_command_from_text(text)
+    if cmd:
+        handle_command(cmd, token=token, room_id=room_id)
         return
-
-    if "/" in text:
-        handle_command(text, token=token, room_id=room_id)
-        return
-
-    # Card submit payload sometimes appears in message body
-    for attachment in message.get("attachments") or []:
-        content = attachment.get("content") or {}
-        if isinstance(content, dict):
-            cmd = content.get("command")
-            if cmd:
-                handle_command(str(cmd), token=token, room_id=room_id)
-                return
 
     if is_help_or_unknown(text):
         logger.info("Help request: '%s'", text[:80])
-        send_help_card(token=token, room_id=room_id, include_about=True)
+        send_help_card(token=token, room_id=room_id, include_about=True, bot_name=bot_name)
 
 
 def poll_once(
@@ -382,6 +404,7 @@ def poll_once(
     room_id: str,
     room_type: str,
     bot_id: str,
+    bot_name: str,
     state: dict[str, Any],
     state_file: Path,
 ) -> None:
@@ -399,7 +422,13 @@ def poll_once(
         return
 
     for message in collect_new_messages(messages, state["last_message_id"]):
-        process_message(message, bot_id=bot_id, token=token, room_id=room_id)
+        process_message(
+            message,
+            bot_id=bot_id,
+            token=token,
+            room_id=room_id,
+            bot_name=bot_name,
+        )
 
     if newest_id != state.get("last_message_id"):
         state["last_message_id"] = newest_id
@@ -420,6 +449,7 @@ def run_poll_loop(
 
     bot = get_bot_identity(token)
     bot_id = bot["id"]
+    bot_name = bot.get("displayName", "Hermes")
     room_type = get_room_type(token, room_id)
 
     room_resp = requests.get(
@@ -438,7 +468,7 @@ def run_poll_loop(
     )
     logger.info("Bot running as %s", bot["displayName"])
     if room_type == "group":
-        logger.info("Group space: users must @mention the bot (e.g. @Hermes /ping)")
+        logger.info("Group space: users must @mention the bot (e.g. @Hermes plan)")
 
     state = load_poll_state(state_file)
     stop = False
@@ -459,6 +489,7 @@ def run_poll_loop(
                 room_id=room_id,
                 room_type=room_type,
                 bot_id=bot_id,
+                bot_name=bot_name,
                 state=state,
                 state_file=state_file,
             )
