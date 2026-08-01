@@ -24,6 +24,11 @@ def build_steps() -> list[Step]:
             argv=[PY, M, "hermes.pipelines.steps.morning_refiner"],
             outputs=["morning_trade_plan.json"],
         ),
+        Step(
+            "persist_picks",
+            argv=[PY, M, "hermes.pipelines.steps.persist_picks", "--source", "morning"],
+            optional_env="MONGODB_URI",
+        ),
         Step("notify_morning", argv=[PY, M, "hermes.integrations.notify_webex", "morning"]),
     ]
 

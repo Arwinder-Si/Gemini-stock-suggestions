@@ -59,6 +59,11 @@ class MongoAnalyticsStore(AnalyticsStore):
     def _create_indexes(self) -> None:
         try:
             self.db.recommendations.create_index([("trading_date", 1), ("symbol", 1)])
+            self.db.recommendations.create_index(
+                [("trading_date", 1), ("symbol", 1), ("pick_source", 1)],
+                unique=True,
+                partialFilterExpression={"pick_source": {"$gt": ""}},
+            )
             self.db.paper_trades.create_index([("trade_id", 1)], unique=True)
             self.db.paper_trades.create_index([("trading_date", 1)])
             self.db.trade_journal.create_index([("journal_id", 1)], unique=True)
@@ -66,8 +71,9 @@ class MongoAnalyticsStore(AnalyticsStore):
             self.db.failure_analyses.create_index([("trade_id", 1)])
             self.db.failure_analyses.create_index([("trading_date", 1)])
             self.db.market_snapshots.create_index([("trading_date", 1)], unique=True)
-            self.db.evaluations.create_index([("recommendation_id", 1)])
+            self.db.evaluations.create_index([("recommendation_id", 1)], unique=True)
             self.db.evaluations.create_index([("trading_date", 1)])
+            self.db.evaluations.create_index([("pick_source", 1)])
             logger.info("MongoDB analytics indexes initialized.")
         except Exception as e:
             logger.warning(f"Could not create Mongo indexes: {e}")
@@ -75,6 +81,23 @@ class MongoAnalyticsStore(AnalyticsStore):
     def save_recommendation(self, rec: Recommendation) -> str:
         doc = asdict(rec)
         self.db.recommendations.insert_one(doc)
+        return rec.recommendation_id
+
+    def save_pipeline_pick(self, rec: Recommendation) -> str:
+        """Upsert a screener pipeline pick (evening/morning), keyed by date+symbol+source."""
+        if not rec.pick_source:
+            raise ValueError("pick_source is required for pipeline picks")
+        filt = {
+            "trading_date": rec.trading_date,
+            "symbol": rec.symbol,
+            "pick_source": rec.pick_source,
+        }
+        existing = self.db.recommendations.find_one(filt)
+        doc = asdict(rec)
+        if existing and existing.get("recommendation_id"):
+            doc["recommendation_id"] = existing["recommendation_id"]
+            rec.recommendation_id = existing["recommendation_id"]
+        self.db.recommendations.update_one(filt, {"$set": doc}, upsert=True)
         return rec.recommendation_id
 
     def save_paper_trade(self, trade: PaperTrade) -> None:
@@ -107,7 +130,62 @@ class MongoAnalyticsStore(AnalyticsStore):
         if hasattr(evaluation, "__dict__"):
             from dataclasses import asdict as _asdict
             evaluation = _asdict(evaluation)
-        self.db.evaluations.insert_one(evaluation)
+        rec_id = evaluation.get("recommendation_id")
+        if rec_id:
+            self.db.evaluations.update_one(
+                {"recommendation_id": rec_id},
+                {"$set": evaluation},
+                upsert=True,
+            )
+        else:
+            self.db.evaluations.insert_one(evaluation)
+
+    def get_pipeline_picks(
+        self,
+        start_date: str | None = None,
+        end_date: str | None = None,
+        pick_source: str | None = None,
+    ) -> list[Recommendation]:
+        query: dict[str, Any] = {"pick_source": {"$gt": ""}}
+        if pick_source:
+            query["pick_source"] = pick_source
+        if start_date and end_date:
+            query["trading_date"] = {"$gte": start_date, "$lte": end_date}
+        elif start_date:
+            query["trading_date"] = {"$gte": start_date}
+        elif end_date:
+            query["trading_date"] = {"$lte": end_date}
+        cursor = self.db.recommendations.find(query).sort("trading_date", 1)
+        results = []
+        for doc in cursor:
+            doc.pop("_id", None)
+            results.append(Recommendation(**doc))
+        return results
+
+    def get_evaluations(
+        self,
+        start_date: str | None = None,
+        end_date: str | None = None,
+        pick_source: str | None = None,
+    ) -> list[dict]:
+        query: dict[str, Any] = {}
+        if pick_source:
+            query["pick_source"] = pick_source
+        if start_date and end_date:
+            query["trading_date"] = {"$gte": start_date, "$lte": end_date}
+        elif start_date:
+            query["trading_date"] = {"$gte": start_date}
+        elif end_date:
+            query["trading_date"] = {"$lte": end_date}
+        cursor = self.db.evaluations.find(query).sort("trading_date", 1)
+        results = []
+        for doc in cursor:
+            doc.pop("_id", None)
+            results.append(doc)
+        return results
+
+    def get_evaluated_recommendation_ids(self) -> set[str]:
+        return {doc["recommendation_id"] for doc in self.db.evaluations.find({}, {"recommendation_id": 1})}
 
     def get_recommendations(self, trading_date: str | None = None) -> list[Recommendation]:
         query = {"trading_date": trading_date} if trading_date else {}
@@ -171,6 +249,21 @@ class InMemoryAnalyticsStore(AnalyticsStore):
         self.recommendations.append(rec)
         return rec.recommendation_id
 
+    def save_pipeline_pick(self, rec: Recommendation) -> str:
+        if not rec.pick_source:
+            raise ValueError("pick_source is required for pipeline picks")
+        key = (rec.trading_date, rec.symbol, rec.pick_source)
+        for i, existing in enumerate(self.recommendations):
+            if (
+                existing.trading_date == rec.trading_date
+                and existing.symbol == rec.symbol
+                and existing.pick_source == rec.pick_source
+            ):
+                self.recommendations[i] = rec
+                return rec.recommendation_id
+        self.recommendations.append(rec)
+        return rec.recommendation_id
+
     def save_paper_trade(self, trade: PaperTrade) -> None:
         self.paper_trades.append(trade)
 
@@ -193,7 +286,45 @@ class InMemoryAnalyticsStore(AnalyticsStore):
         if hasattr(evaluation, "__dict__"):
             from dataclasses import asdict
             evaluation = asdict(evaluation)
+        rec_id = evaluation.get("recommendation_id")
+        for i, existing in enumerate(self.evaluations):
+            if existing.get("recommendation_id") == rec_id:
+                self.evaluations[i] = evaluation
+                return
         self.evaluations.append(evaluation)
+
+    def get_pipeline_picks(
+        self,
+        start_date: str | None = None,
+        end_date: str | None = None,
+        pick_source: str | None = None,
+    ) -> list[Recommendation]:
+        results = [r for r in self.recommendations if r.pick_source]
+        if pick_source:
+            results = [r for r in results if r.pick_source == pick_source]
+        if start_date:
+            results = [r for r in results if r.trading_date >= start_date]
+        if end_date:
+            results = [r for r in results if r.trading_date <= end_date]
+        return sorted(results, key=lambda r: r.trading_date)
+
+    def get_evaluations(
+        self,
+        start_date: str | None = None,
+        end_date: str | None = None,
+        pick_source: str | None = None,
+    ) -> list[dict]:
+        results = list(self.evaluations)
+        if pick_source:
+            results = [e for e in results if e.get("pick_source") == pick_source]
+        if start_date:
+            results = [e for e in results if e.get("trading_date", "") >= start_date]
+        if end_date:
+            results = [e for e in results if e.get("trading_date", "") <= end_date]
+        return sorted(results, key=lambda e: e.get("trading_date", ""))
+
+    def get_evaluated_recommendation_ids(self) -> set[str]:
+        return {e["recommendation_id"] for e in self.evaluations if e.get("recommendation_id")}
 
     def get_recommendations(self, trading_date: str | None = None) -> list[Recommendation]:
         if trading_date:

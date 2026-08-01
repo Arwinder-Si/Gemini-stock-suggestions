@@ -20,7 +20,7 @@ import sys
 from datetime import date, datetime
 
 from hermes.clock import trading_date_ist
-from hermes.pipelines import evening, live, morning, pnl
+from hermes.pipelines import evening, live, morning, pnl, weekly
 
 logging.basicConfig(
     level=logging.INFO,
@@ -51,6 +51,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("live", help="Launch the live agent (main.py)")
     sub.add_parser("pnl", help="Send the end-of-day P&L report")
+    sub.add_parser("weekly", help="Run weekly pipeline pick analytics (Friday report)")
     sub.add_parser("chatops", help="Run the Webex ChatOps poller (outbound API)")
 
     return parser
@@ -78,6 +79,8 @@ def main(argv: list[str] | None = None) -> int:
         morning.run(trading_date, force=args.force, skip=_parse_skip(args.skip))
     elif args.command == "pnl":
         pnl.run()
+    elif args.command == "weekly":
+        weekly.run()
 
     return 0
 

@@ -7,8 +7,7 @@ from hermes.analytics.evaluation import (
     OutcomeLabel,
     TradeEvaluation,
 )
-from hermes.data.analytics_models import PaperTrade, Recommendation
-from hermes.pipelines.steps.outcome_enricher import RecommendationOutcome
+from hermes.data.analytics_models import PaperTrade, Recommendation, RecommendationOutcome
 
 
 class TestLabelPaperTrade:

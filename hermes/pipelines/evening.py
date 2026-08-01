@@ -58,6 +58,11 @@ def build_steps() -> list[Step]:
             argv=[PY, M, "hermes.pipelines.steps.intraday_trigger", "--universe", "small"],
             outputs=["trade_plan_smallcap.json"],
         ),
+        Step(
+            "persist_picks",
+            argv=[PY, M, "hermes.pipelines.steps.persist_picks", "--source", "evening"],
+            optional_env="MONGODB_URI",
+        ),
         Step("market_snapshot", argv=[PY, M, "hermes.pipelines.steps.market_snapshot_job"], optional_env="MONGODB_URI"),
         Step("outcome_enricher", argv=[PY, M, "hermes.pipelines.steps.outcome_enricher"], optional_env="MONGODB_URI"),
         Step("sqlite_persist", func=_sqlite_persist),

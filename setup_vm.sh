@@ -53,6 +53,14 @@ python -m hermes.cli pnl
 EOF
 chmod +x run_pnl.sh
 
+cat << 'EOF' > run_weekly.sh
+#!/bin/bash
+cd "$(dirname "$0")"
+source venv/bin/activate
+python -m hermes.cli weekly
+EOF
+chmod +x run_weekly.sh
+
 # 4. Set up ChatOps Polling Daemon (Systemd)
 echo "🤖 Installing Webex ChatOps poller (outbound API, no webhooks)..."
 SERVICE_FILE="/etc/systemd/system/nse-bot-listener.service"
@@ -112,6 +120,9 @@ echo "40 15 * * 1-5 $(pwd)/run_pnl.sh >> $(pwd)/pnl.log 2>&1" >> $CRON_FILE
 echo "" >> $CRON_FILE
 echo "# 4. Evening Screener & Report at 3:45 PM (Mon-Fri)" >> $CRON_FILE
 echo "45 15 * * 1-5 $(pwd)/run_evening.sh >> $(pwd)/evening.log 2>&1" >> $CRON_FILE
+echo "" >> $CRON_FILE
+echo "# 5. Weekly Pipeline Pick Analytics at 5:00 PM Friday (IST)" >> $CRON_FILE
+echo "00 17 * * 5 $(pwd)/run_weekly.sh >> $(pwd)/weekly.log 2>&1" >> $CRON_FILE
 
 crontab $CRON_FILE
 rm $CRON_FILE

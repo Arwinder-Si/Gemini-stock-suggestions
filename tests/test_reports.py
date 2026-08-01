@@ -1,5 +1,7 @@
 """Unit tests for daily comparison report and analytics report modules."""
 
+from unittest.mock import MagicMock, patch
+
 from hermes.data.analytics_models import PaperTrade, FailureAnalysis
 from hermes.analytics.daily_report import build_daily_comparison, format_daily_report
 from hermes.analytics.analytics_report import (
@@ -8,6 +10,7 @@ from hermes.analytics.analytics_report import (
     generate_failure_tag_report,
     generate_improvement_suggestions,
     generate_full_analytics_report,
+    print_stats_summary,
 )
 
 
@@ -80,3 +83,34 @@ class TestAnalyticsReport:
         full_rpt = generate_full_analytics_report(trades)
         assert "Strategy Performance" in full_rpt
         assert "Sector Performance" in full_rpt
+
+
+class TestPrintStatsSummary:
+    @patch("hermes.config.get_config")
+    def test_no_mongodb_uri(self, mock_cfg):
+        mock_cfg.return_value = MagicMock(mongodb_uri="")
+        msg = print_stats_summary()
+        assert "MongoDB not configured" in msg
+
+    @patch("hermes.data.analytics_mongo.MongoAnalyticsStore")
+    @patch("hermes.config.get_config")
+    def test_reads_from_mongo(self, mock_cfg, mock_store_cls):
+        mock_cfg.return_value = MagicMock(
+            mongodb_uri="mongodb+srv://x",
+            mongodb_tls_insecure=False,
+        )
+        store = mock_store_cls.return_value
+        store.get_paper_trades.side_effect = [
+            [PaperTrade(trade_id="T1", trading_date="2026-08-01", net_pnl=100.0)],
+            [
+                PaperTrade(trade_id="T1", trading_date="2026-08-01", net_pnl=100.0),
+                PaperTrade(trade_id="T2", trading_date="2026-07-31", net_pnl=-50.0),
+            ],
+        ]
+        msg = print_stats_summary()
+        assert "Analytics Summary" in msg
+        assert "Win Rate" in msg
+        mock_store_cls.assert_called_once_with(
+            "mongodb+srv://x",
+            tls_insecure=False,
+        )

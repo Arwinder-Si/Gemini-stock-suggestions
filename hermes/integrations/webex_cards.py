@@ -24,6 +24,7 @@ MENU_COMMANDS: list[tuple[str, str, str]] = [
     ("/morning", "Morning Briefing", "Gap prediction + refined trade list"),
     ("/paper", "Paper Portfolio", "Paper trading capital and limits"),
     ("/journal", "Today's Journal", "Paper trades executed today"),
+    ("/weekly", "Weekly Picks", "Evening + morning screener performance"),
     ("/stats", "Analytics", "Win rate and performance summary"),
     ("/help", "About Hermes", "What this bot does and all commands"),
 ]

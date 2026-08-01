@@ -12,6 +12,7 @@ Commands:
   /morning  — Force a Morning Gap Prediction
   /paper    — Paper Trading Portfolio Status
   /journal  — Today's Trade Journal Report
+  /weekly   — Weekly pipeline pick performance (evening + morning screener)
   /stats    — Analytics summary (win rate, trades, failure tags)
   /kill     — Emergency shutdown — flatten all positions and halt agent
   /help     — Command list
@@ -164,6 +165,7 @@ COMMAND_ALIASES: dict[str, str] = {
     "morning": "/morning",
     "paper": "/paper",
     "journal": "/journal",
+    "weekly": "/weekly",
     "stats": "/stats",
     "help": "/help",
     "about": "/help",
@@ -268,8 +270,14 @@ def handle_command(text: str, *, token: str, room_id: str) -> None:
         run_script([
             sys.executable,
             "-c",
-            "from hermes.analytics.trade_journal_report import generate_journal_report; "
-            "print(generate_journal_report([]))",
+            "from hermes.analytics.trade_journal_report import print_today_journal; print_today_journal()",
+        ])
+    elif cmd == "/weekly":
+        send_webex_reply("📊 **Generating Weekly Pipeline Pick Report...**", token=token, room_id=room_id)
+        run_script([
+            sys.executable,
+            "-c",
+            "from hermes.analytics.weekly_pick_report import print_weekly_report; print_weekly_report()",
         ])
     elif cmd == "/kill":
         send_webex_reply(

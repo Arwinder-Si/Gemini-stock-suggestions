@@ -134,6 +134,7 @@ def test_evening_step_order():
         "trade_plan_large",
         "screener_small",
         "trade_plan_small",
+        "persist_picks",
         "market_snapshot",
         "outcome_enricher",
         "sqlite_persist",
@@ -143,12 +144,16 @@ def test_evening_step_order():
 
 def test_evening_optional_steps_gated_on_mongo():
     gated = {s.name: s.optional_env for s in evening.build_steps() if s.optional_env}
-    assert gated == {"market_snapshot": "MONGODB_URI", "outcome_enricher": "MONGODB_URI"}
+    assert gated == {
+        "persist_picks": "MONGODB_URI",
+        "market_snapshot": "MONGODB_URI",
+        "outcome_enricher": "MONGODB_URI",
+    }
 
 
 def test_morning_step_order():
     names = [s.name for s in morning.build_steps()]
-    assert names == ["global_signals", "morning_refiner", "notify_morning"]
+    assert names == ["global_signals", "morning_refiner", "persist_picks", "notify_morning"]
 
 
 def test_evening_run_updates_latest(var_root, monkeypatch):

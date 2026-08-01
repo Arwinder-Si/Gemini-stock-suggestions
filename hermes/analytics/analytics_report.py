@@ -172,9 +172,11 @@ def print_stats_summary() -> str:
     Attempts to read from MongoDB; falls back to a placeholder
     if no connection is configured.
     """
-    import os
+    from hermes.config import get_config
+    from hermes.data.analytics_mongo import MongoAnalyticsStore
 
-    mongo_uri = os.getenv("MONGODB_URI")
+    cfg = get_config()
+    mongo_uri = cfg.mongodb_uri
     if not mongo_uri:
         msg = (
             "📈 **Analytics Summary**\n\n"
@@ -186,8 +188,10 @@ def print_stats_summary() -> str:
         return msg
 
     try:
-        from analytics_mongo import MongoAnalyticsStore
-        store = MongoAnalyticsStore(mongo_uri)
+        store = MongoAnalyticsStore(
+            mongo_uri,
+            tls_insecure=cfg.mongodb_tls_insecure,
+        )
         today = trading_date_ist().strftime("%Y-%m-%d")
 
         trades_today = store.get_paper_trades(today)

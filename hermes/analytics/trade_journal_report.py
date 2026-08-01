@@ -45,6 +45,36 @@ def generate_journal_report(entries: list[TradeJournalEntry]) -> str:
     return "\n".join(lines)
 
 
+def print_today_journal() -> str:
+    """Load today's journal entries from MongoDB and print the report (ChatOps /journal)."""
+    from hermes.clock import trading_date_ist
+    from hermes.config import get_config
+    from hermes.data.analytics_mongo import MongoAnalyticsStore
+
+    cfg = get_config()
+    today = trading_date_ist().strftime("%Y-%m-%d")
+
+    if not cfg.mongodb_uri:
+        msg = (
+            "### 📖 Trade Journal Report\n\n"
+            "MongoDB not configured (`MONGODB_URI` not set).\n"
+            "Journal entries are stored when the live agent runs in paper mode."
+        )
+        print(msg)
+        return msg
+
+    try:
+        store = MongoAnalyticsStore(cfg.mongodb_uri, tls_insecure=cfg.mongodb_tls_insecure)
+        entries = store.get_journal_entries(today)
+        report = generate_journal_report(entries)
+        print(report)
+        return report
+    except Exception as exc:
+        msg = f"### 📖 Trade Journal Report\n\nFailed to load journal: {exc}"
+        print(msg)
+        return msg
+
+
 def generate_weekly_report(entries: list[TradeJournalEntry]) -> str:
     """Generates a weekly aggregated performance report."""
     if not entries:

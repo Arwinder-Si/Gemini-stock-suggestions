@@ -16,6 +16,7 @@ class Recommendation:
     company_name: str = ""
     sector: str = ""
     strategy: str = "ORB"
+    pick_source: str = ""  # evening_large | evening_small | morning | "" (live ORB)
     action: str = "BUY"  # BUY / SELL / HOLD
     entry_price: float = 0.0
     stop_loss: float = 0.0
@@ -26,6 +27,23 @@ class Recommendation:
     market_regime: str = ""
     vix_value: float = 0.0
     supporting_indicators: dict = field(default_factory=dict)
+
+
+@dataclass
+class RecommendationOutcome:
+    """Post-session price action outcome for a pipeline pick or recommendation."""
+    recommendation_id: str
+    symbol: str
+    trading_date: str
+    actual_entry_price: float
+    highest_price_reached: float
+    lowest_price_reached: float
+    closing_price: float
+    max_gain_pct: float
+    max_drawdown_pct: float
+    target_hit: bool
+    stop_loss_hit: bool
+    final_pnl_pct: float
 
 
 @dataclass

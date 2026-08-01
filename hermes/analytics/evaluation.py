@@ -14,8 +14,7 @@ import logging
 from dataclasses import dataclass, field
 from enum import Enum
 
-from hermes.data.analytics_models import PaperTrade, Recommendation
-from hermes.pipelines.steps.outcome_enricher import RecommendationOutcome
+from hermes.data.analytics_models import PaperTrade, Recommendation, RecommendationOutcome
 
 logger = logging.getLogger(__name__)
 

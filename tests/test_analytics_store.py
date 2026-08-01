@@ -15,6 +15,18 @@ def test_in_memory_analytics_store():
     assert rec_id.startswith("REC-")
     assert len(store.get_recommendations("2026-07-31")) == 1
 
+    pipeline_rec = Recommendation(
+        trading_date="2026-08-01",
+        symbol="M&M",
+        pick_source="evening_large",
+        strategy="PIPELINE",
+        entry_price=3400.0,
+    )
+    store.save_pipeline_pick(pipeline_rec)
+    assert len(store.get_pipeline_picks()) == 1
+    store.save_pipeline_pick(pipeline_rec)
+    assert len(store.get_pipeline_picks()) == 1
+
     entry = TradeJournalEntry(
         trading_date="2026-07-31",
         symbol="RELIANCE",
