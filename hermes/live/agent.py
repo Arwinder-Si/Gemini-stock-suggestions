@@ -99,7 +99,7 @@ def agent_loop_worker(
     # Analytics Store
     if mongo_uri:
         try:
-            store = MongoAnalyticsStore(mongo_uri)
+            store = MongoAnalyticsStore(mongo_uri, tls_insecure=cfg.mongodb_tls_insecure)
             logger.info("Connected to MongoDB Atlas analytics store.")
         except Exception as e:
             logger.warning(f"Failed to connect to MongoDB Atlas ({e}). Falling back to InMemoryAnalyticsStore.")

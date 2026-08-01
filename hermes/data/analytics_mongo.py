@@ -17,12 +17,42 @@ from hermes.data.analytics_models import (
 logger = logging.getLogger(__name__)
 
 
+def create_mongo_client(
+    mongo_uri: str,
+    *,
+    tls_insecure: bool = False,
+    server_selection_timeout_ms: int = 10000,
+):
+    """
+    Build a pymongo client with explicit CA bundle (certifi).
+
+    Corporate VMs sometimes fail Atlas TLS with the system CA store alone;
+    certifi fixes most cases. MONGODB_TLS_INSECURE is a last resort behind
+    SSL-inspecting proxies (dev/debug only).
+    """
+    import certifi
+    import pymongo
+
+    kwargs: dict = {"serverSelectionTimeoutMS": server_selection_timeout_ms}
+    if mongo_uri.startswith("mongodb+srv://") or "tls=true" in mongo_uri.lower():
+        kwargs["tlsCAFile"] = certifi.where()
+    if tls_insecure:
+        logger.warning("MONGODB_TLS_INSECURE enabled — TLS certificate verification disabled")
+        kwargs["tlsAllowInvalidCertificates"] = True
+    return pymongo.MongoClient(mongo_uri, **kwargs)
+
+
 class MongoAnalyticsStore(AnalyticsStore):
     """MongoDB Atlas analytics store client with collection indexing."""
 
-    def __init__(self, mongo_uri: str, db_name: str = "hermes_analytics"):
-        import pymongo
-        self.client = pymongo.MongoClient(mongo_uri, serverSelectionTimeoutMS=5000)
+    def __init__(
+        self,
+        mongo_uri: str,
+        db_name: str = "hermes_analytics",
+        *,
+        tls_insecure: bool = False,
+    ):
+        self.client = create_mongo_client(mongo_uri, tls_insecure=tls_insecure)
         self.db = self.client[db_name]
         self._create_indexes()
 

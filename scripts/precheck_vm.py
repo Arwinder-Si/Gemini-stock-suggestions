@@ -69,7 +69,22 @@ def check_config() -> tuple[bool, object]:
     return ok, cfg
 
 
-def check_mongodb(uri: str) -> bool:
+def _mongodb_ssl_hints() -> None:
+    _warn("TLSV1_ALERT_INTERNAL_ERROR almost always means Atlas Network Access blocked this IP.")
+    _warn("Atlas rejects non-whitelisted IPs during TLS — it looks like an SSL error, not a cert issue.")
+    try:
+        import requests
+
+        ip = requests.get("https://ifconfig.me/ip", timeout=5).text.strip()
+        if ip:
+            _warn(f"Add this outbound IP in Atlas → Network Access: {ip}/32")
+    except Exception:
+        _warn("Run: curl -s https://ifconfig.me/ip  and add that IP in Atlas → Network Access")
+    _warn("Quick test: temporarily allow 0.0.0.0/0 in Atlas Network Access (remove after confirming)")
+    _warn("Your VM and Mac have different IPs — whitelist both if you use both.")
+
+
+def check_mongodb(uri: str, *, tls_insecure: bool = False) -> bool:
     print("\n[3] MongoDB Atlas")
     if not uri:
         _fail("MONGODB_URI not set — paper trades will not persist")
@@ -78,7 +93,7 @@ def check_mongodb(uri: str) -> bool:
         import hermes.data  # noqa: F401 — ensure package exists on VM
         from hermes.data.analytics_mongo import MongoAnalyticsStore
 
-        store = MongoAnalyticsStore(uri)
+        store = MongoAnalyticsStore(uri, tls_insecure=tls_insecure)
         store.client.admin.command("ping")
         _ok("MongoDB ping succeeded")
         cols = store.db.list_collection_names()
@@ -92,8 +107,12 @@ def check_mongodb(uri: str) -> bool:
         )
         return False
     except Exception as exc:
-        _fail(f"MongoDB connection failed: {exc}")
-        _warn("Check Atlas Network Access allows this VM's outbound IP")
+        err = str(exc)
+        _fail(f"MongoDB connection failed: {err[:200]}")
+        if "SSL" in err or "TLS" in err or "tlsv1" in err.lower():
+            _mongodb_ssl_hints()
+        else:
+            _warn("Check Atlas Network Access allows this VM's outbound IP")
         return False
 
 
@@ -136,6 +155,12 @@ def check_webex(token: str, room_id: str) -> bool:
         if msgs.status_code == 403:
             _fail("403 listing messages — bot may not be in the room, or mention filter issue")
             return False
+        if msgs.status_code == 429:
+            _warn("Messages API rate limited (HTTP 429) — bot token and room are OK")
+            _warn("Wait a minute and retry precheck, or increase BOT_POLL_INTERVAL_SEC to 5")
+            if room_type == "group":
+                _warn("Group space: users must send @Hermes /ping (with @mention)")
+            return True
         if msgs.status_code != 200:
             _fail(f"Messages API failed: HTTP {msgs.status_code}")
             return False
@@ -231,7 +256,10 @@ def main() -> int:
         return 1
 
     config_ok, cfg = check_config()
-    mongo_ok = check_mongodb(cfg.mongodb_uri or os.getenv("MONGODB_URI", ""))
+    mongo_ok = check_mongodb(
+        cfg.mongodb_uri or os.getenv("MONGODB_URI", ""),
+        tls_insecure=cfg.mongodb_tls_insecure,
+    )
     webex_ok = check_webex(cfg.webex_token, cfg.webex_room_id)
     yfinance_ok = check_yfinance()
     check_dhan_optional(cfg)

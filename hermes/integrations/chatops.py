@@ -210,6 +210,10 @@ def list_room_messages(
             "and the bot is a member of the room."
         )
         return []
+    if resp.status_code == 429:
+        retry_after = resp.headers.get("Retry-After", "5")
+        logger.warning("Webex rate limit (429) — backing off %ss", retry_after)
+        return []
     resp.raise_for_status()
     return resp.json().get("items", [])
 
@@ -349,6 +353,13 @@ def run_poll_loop(
                 state=state,
                 state_file=state_file,
             )
+        except requests.HTTPError as exc:
+            if exc.response is not None and exc.response.status_code == 429:
+                retry = int(exc.response.headers.get("Retry-After", 10))
+                logger.warning("Rate limited — sleeping %ds", retry)
+                time.sleep(retry)
+                continue
+            logger.exception("Poll iteration failed")
         except requests.RequestException:
             logger.exception("Poll iteration failed")
         time.sleep(poll_interval_secs)

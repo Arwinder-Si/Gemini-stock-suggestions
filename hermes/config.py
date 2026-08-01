@@ -51,6 +51,8 @@ class Settings(BaseSettings):
 
     # Analytics persistence (MongoDB Atlas)
     mongodb_uri: str = Field(default="", alias="MONGODB_URI")
+    # Last resort on corporate VMs with SSL inspection — not for production
+    mongodb_tls_insecure: bool = Field(default=False, alias="MONGODB_TLS_INSECURE")
 
     model_config = SettingsConfigDict(
         env_file=".env",
