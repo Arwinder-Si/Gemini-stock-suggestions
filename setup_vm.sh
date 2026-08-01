@@ -81,8 +81,8 @@ if [ -f "$ENV_FILE" ]; then
     if ! grep -qE '^BOT_POLL_INTERVAL_SEC=' "$ENV_FILE"; then
         echo "" >> "$ENV_FILE"
         echo "# Webex command polling interval (seconds)" >> "$ENV_FILE"
-        echo "BOT_POLL_INTERVAL_SEC=2" >> "$ENV_FILE"
-        echo "✅ Added BOT_POLL_INTERVAL_SEC=2 to .env"
+        echo "BOT_POLL_INTERVAL_SEC=5" >> "$ENV_FILE"
+        echo "✅ Added BOT_POLL_INTERVAL_SEC=5 to .env"
     fi
     if ! grep -qE '^WEBEX_TOKEN=.+' "$ENV_FILE"; then
         echo "⚠️  WEBEX_TOKEN not set — ChatOps commands will not work until .env is configured."
@@ -132,5 +132,5 @@ echo "  3. In group spaces, @mention the bot: @Hermes /ping"
 echo ""
 echo "Verify the poller:"
 echo "  sudo journalctl -u nse-bot-listener.service -n 20 --no-pager"
-echo "  (look for: Listening in room ... poll every 2.0s)"
+echo "  (look for: Listening in room ... poll every 5.0s)"
 echo "---------------------------------------------------"

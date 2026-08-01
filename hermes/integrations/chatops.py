@@ -53,6 +53,22 @@ logger = logging.getLogger("WebexChatOps")
 WEBEX_API = "https://webexapis.com/v1"
 
 
+class WebexRateLimited(Exception):
+    """Raised when Webex returns HTTP 429; caller should sleep retry_after seconds."""
+
+    def __init__(self, retry_after: float):
+        self.retry_after = retry_after
+        super().__init__(f"Rate limited for {retry_after:.0f}s")
+
+
+def _parse_retry_after(response: requests.Response, *, default: float = 10.0) -> float:
+    raw = response.headers.get("Retry-After", str(default))
+    try:
+        return max(float(raw), 1.0)
+    except ValueError:
+        return default
+
+
 def _api_headers(token: str) -> dict[str, str]:
     return {
         "Authorization": f"Bearer {token}",
@@ -66,6 +82,7 @@ def send_webex_message(
     room_id: str,
     markdown: str,
     attachments: list[dict] | None = None,
+    _retries: int = 1,
 ) -> None:
     """Send a markdown message, optionally with adaptive card attachments."""
     payload: dict = {"roomId": room_id, "markdown": markdown}
@@ -77,6 +94,18 @@ def send_webex_message(
         json=payload,
         timeout=15,
     )
+    if resp.status_code == 429 and _retries > 0:
+        retry = _parse_retry_after(resp)
+        logger.warning("Webex send rate limited — sleeping %.0fs and retrying", retry)
+        time.sleep(retry)
+        send_webex_message(
+            token=token,
+            room_id=room_id,
+            markdown=markdown,
+            attachments=attachments,
+            _retries=_retries - 1,
+        )
+        return
     if resp.status_code != 200:
         logger.error("Webex send failed: %s — %s", resp.status_code, resp.text)
 
@@ -273,9 +302,8 @@ def list_room_messages(
         )
         return []
     if resp.status_code == 429:
-        retry_after = resp.headers.get("Retry-After", "5")
-        logger.warning("Webex rate limit (429) — backing off %ss", retry_after)
-        return []
+        retry_after = _parse_retry_after(resp)
+        raise WebexRateLimited(retry_after)
     resp.raise_for_status()
     return resp.json().get("items", [])
 
@@ -382,7 +410,7 @@ def run_poll_loop(
     *,
     token: str,
     room_id: str,
-    poll_interval_secs: float = 2.0,
+    poll_interval_secs: float = 5.0,
     state_file: Path | None = None,
 ) -> None:
     """Blocking poll loop — run as a long-lived systemd service."""
@@ -434,10 +462,17 @@ def run_poll_loop(
                 state=state,
                 state_file=state_file,
             )
+        except WebexRateLimited as exc:
+            logger.warning(
+                "Webex rate limit (429) — sleeping %.0fs before next poll",
+                exc.retry_after,
+            )
+            time.sleep(exc.retry_after)
+            continue
         except requests.HTTPError as exc:
             if exc.response is not None and exc.response.status_code == 429:
-                retry = int(exc.response.headers.get("Retry-After", 10))
-                logger.warning("Rate limited — sleeping %ds", retry)
+                retry = _parse_retry_after(exc.response)
+                logger.warning("Rate limited — sleeping %.0fs", retry)
                 time.sleep(retry)
                 continue
             logger.exception("Poll iteration failed")

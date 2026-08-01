@@ -39,8 +39,8 @@ def hermes_about_markdown() -> str:
 
 def help_menu_markdown() -> str:
     return (
-        "I didn't recognize that request. Here is what I can do — "
-        "**tap a button below** or type `@Hermes /command`:\n\n"
+        "Here is what I can do — **type `@Hermes /command`** in this space "
+        "(card buttons need a public webhook; on this VM use typed commands):\n\n"
         + "\n".join(f"- `{cmd}` — {label}" for cmd, label, _ in MENU_COMMANDS)
         + "\n\n_Advanced: `/pnl` (live Dhan), `/kill` (emergency halt)_"
     )
@@ -58,7 +58,11 @@ def build_help_adaptive_card() -> dict[str, Any]:
         },
         {
             "type": "TextBlock",
-            "text": "Tap a button to run a command, or type @Hermes /command in this space.",
+            "text": (
+                "In group spaces, type @Hermes /command (example: @Hermes /plan). "
+                "Buttons below are quick reference only — they do not run commands "
+                "without a public webhook URL."
+            ),
             "isSubtle": True,
             "wrap": True,
         },

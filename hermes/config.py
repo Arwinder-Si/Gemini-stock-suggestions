@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     webex_room_id: str = Field(default="", alias="WEBEX_ROOM_ID")
     bot_public_url: str = Field(default="", alias="BOT_PUBLIC_URL")
     bot_port: int = Field(default=5050, alias="BOT_PORT")
-    bot_poll_interval_sec: float = Field(default=2.0, alias="BOT_POLL_INTERVAL_SEC")
+    bot_poll_interval_sec: float = Field(default=5.0, alias="BOT_POLL_INTERVAL_SEC")
     bot_state_file: str = Field(default="", alias="BOT_STATE_FILE")
 
     # Paper Trading / Agent

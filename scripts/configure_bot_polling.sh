@@ -24,8 +24,8 @@ if ! grep -qE '^WEBEX_ROOM_ID=.+' "$ENV_FILE"; then
 fi
 
 if ! grep -qE '^BOT_POLL_INTERVAL_SEC=' "$ENV_FILE"; then
-    echo "BOT_POLL_INTERVAL_SEC=2" >> "$ENV_FILE"
-    echo "Added BOT_POLL_INTERVAL_SEC=2"
+    echo "BOT_POLL_INTERVAL_SEC=5" >> "$ENV_FILE"
+    echo "Added BOT_POLL_INTERVAL_SEC=5"
 fi
 
 sudo systemctl restart nse-bot-listener.service

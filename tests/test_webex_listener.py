@@ -75,6 +75,18 @@ class TestPollingHelpers:
         )
         mock_handle.assert_called_once_with("@Hermes /ping", token="tok", room_id="room")
 
+    def test_list_room_messages_raises_on_rate_limit(self, monkeypatch):
+        def fake_get(url, headers=None, params=None, timeout=None):
+            resp = MagicMock()
+            resp.status_code = 429
+            resp.headers = {"Retry-After": "30"}
+            return resp
+
+        monkeypatch.setattr(chatops.requests, "get", fake_get)
+        with pytest.raises(chatops.WebexRateLimited) as exc:
+            chatops.list_room_messages("tok", "room-1", room_type="group")
+        assert exc.value.retry_after == 30.0
+
     def test_list_room_messages_uses_mentioned_for_group(self, monkeypatch):
         captured = {}
 
