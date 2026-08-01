@@ -40,6 +40,7 @@ from hermes.integrations.webex_cards import (
     help_message_attachments,
     hermes_about_markdown,
 )
+from hermes.integrations.webex_websocket import WebexCardActionListener
 
 load_dotenv()
 
@@ -121,18 +122,19 @@ def send_help_card(
     room_id: str,
     include_about: bool = True,
     bot_name: str = "Hermes",
+    bot_email: str = "",
 ) -> None:
-    """Send help menu with command reference card and Hermes description."""
+    """Send help menu with command buttons and Hermes description."""
     parts = []
     if include_about:
-        parts.append(hermes_about_markdown())
+        parts.append(hermes_about_markdown(bot_email=bot_email, bot_name=bot_name))
         parts.append("---")
-    parts.append(help_menu_markdown(bot_name=bot_name))
+    parts.append(help_menu_markdown(bot_email=bot_email, bot_name=bot_name))
     send_webex_message(
         token=token,
         room_id=room_id,
         markdown="\n\n".join(parts),
-        attachments=help_message_attachments(bot_name=bot_name),
+        attachments=help_message_attachments(bot_email=bot_email, bot_name=bot_name),
     )
 
 
@@ -277,7 +279,14 @@ def handle_command(text: str, *, token: str, room_id: str) -> None:
             "from hermes.analytics.analytics_report import print_stats_summary; print_stats_summary()",
         ])
     elif cmd == "/help":
-        send_help_card(token=token, room_id=room_id, include_about=True)
+        bot = get_bot_identity(token)
+        send_help_card(
+            token=token,
+            room_id=room_id,
+            include_about=True,
+            bot_name=bot.get("displayName", "Hermes"),
+            bot_email=bot.get("email", ""),
+        )
     else:
         send_webex_reply(
             f"❓ Unknown command `{cmd}`.\n\n" + help_menu_markdown(),
@@ -293,11 +302,31 @@ def handle_command(text: str, *, token: str, room_id: str) -> None:
 
 
 def get_bot_identity(token: str) -> dict[str, str]:
-    """Return bot id and display name."""
+    """Return bot id, display name, and email (for Webex mention tags)."""
     resp = requests.get(f"{WEBEX_API}/people/me", headers=_api_headers(token), timeout=15)
     resp.raise_for_status()
     data = resp.json()
-    return {"id": data["id"], "displayName": data.get("displayName", "Bot")}
+    emails = data.get("emails") or []
+    return {
+        "id": data["id"],
+        "displayName": data.get("displayName", "Bot"),
+        "email": emails[0] if emails else "",
+    }
+
+
+def handle_attachment_action(action: dict[str, Any], *, token: str, room_id: str) -> None:
+    """Run a slash command from an adaptive card Action.Submit."""
+    inputs = action.get("inputs") or {}
+    cmd = inputs.get("command") or inputs.get("callback_keyword", "")
+    if isinstance(cmd, str) and cmd.startswith("callback___"):
+        cmd = cmd.replace("callback___", "", 1)
+    if not cmd:
+        logger.warning("Card action missing command: %s", inputs)
+        return
+    if not str(cmd).startswith("/"):
+        cmd = f"/{cmd}"
+    logger.info("Card action command: %s", cmd)
+    handle_command(str(cmd), token=token, room_id=room_id)
 
 
 def get_room_type(token: str, room_id: str) -> str:
@@ -382,6 +411,7 @@ def process_message(
     token: str,
     room_id: str,
     bot_name: str = "Hermes",
+    bot_email: str = "",
 ) -> None:
     """Handle @mention messages: slash commands, aliases, or help."""
     if message.get("personId") == bot_id:
@@ -395,7 +425,13 @@ def process_message(
 
     if is_help_or_unknown(text):
         logger.info("Help request: '%s'", text[:80])
-        send_help_card(token=token, room_id=room_id, include_about=True, bot_name=bot_name)
+        send_help_card(
+            token=token,
+            room_id=room_id,
+            include_about=True,
+            bot_name=bot_name,
+            bot_email=bot_email,
+        )
 
 
 def poll_once(
@@ -405,6 +441,7 @@ def poll_once(
     room_type: str,
     bot_id: str,
     bot_name: str,
+    bot_email: str,
     state: dict[str, Any],
     state_file: Path,
 ) -> None:
@@ -428,6 +465,7 @@ def poll_once(
             token=token,
             room_id=room_id,
             bot_name=bot_name,
+            bot_email=bot_email,
         )
 
     if newest_id != state.get("last_message_id"):
@@ -450,7 +488,26 @@ def run_poll_loop(
     bot = get_bot_identity(token)
     bot_id = bot["id"]
     bot_name = bot.get("displayName", "Hermes")
+    bot_email = bot.get("email", "")
     room_type = get_room_type(token, room_id)
+
+    card_listener: WebexCardActionListener | None = None
+    cfg = get_config()
+    if cfg.bot_use_websocket:
+        card_listener = WebexCardActionListener(
+            token=token,
+            room_id=room_id,
+            bot_id=bot_id,
+            bot_email=bot_email,
+            on_card_action=lambda action: handle_attachment_action(
+                action, token=token, room_id=room_id
+            ),
+        )
+        try:
+            card_listener.start()
+        except Exception:
+            logger.exception("Failed to start Webex WebSocket — card buttons disabled")
+            card_listener = None
 
     room_resp = requests.get(
         f"{WEBEX_API}/rooms/{room_id}",
@@ -466,7 +523,11 @@ def run_poll_loop(
         room_type,
         poll_interval_secs,
     )
-    logger.info("Bot running as %s", bot["displayName"])
+    logger.info("Bot running as %s <%s>", bot["displayName"], bot_email or "unknown")
+    if cfg.bot_use_websocket and card_listener is not None:
+        logger.info("Webex WebSocket enabled — adaptive card buttons active")
+    elif cfg.bot_use_websocket:
+        logger.warning("Webex WebSocket unavailable — use typed @mention commands")
     if room_type == "group":
         logger.info("Group space: users must @mention the bot (e.g. @Hermes plan)")
 
@@ -476,6 +537,8 @@ def run_poll_loop(
     def _shutdown(signum, frame):
         nonlocal stop
         logger.info("Shutdown signal received — saving poll state.")
+        if card_listener is not None:
+            card_listener.stop()
         save_poll_state(state_file, state)
         stop = True
 
@@ -490,6 +553,7 @@ def run_poll_loop(
                 room_type=room_type,
                 bot_id=bot_id,
                 bot_name=bot_name,
+                bot_email=bot_email,
                 state=state,
                 state_file=state_file,
             )

@@ -1,16 +1,18 @@
 """
 Webex Adaptive Cards for Hermes ChatOps.
 
-Card buttons (Action.Submit) require an inbound webhook — not available on the
-internal polling VM. The help card lists copy-paste commands such as
-``@Hermes plan`` instead of fake clickable buttons.
+Card Action.Submit buttons are handled via outbound WebSocket (see webex_websocket.py).
+User-facing command text uses Webex mention tags:
+``<@personEmail:hermes@webex.bot|Hermes> plan``
 """
 
 from __future__ import annotations
 
 from typing import Any
 
-# Commands exposed in the help menu
+from hermes.integrations.webex_mention import format_bot_mention, format_user_command
+
+# Commands exposed as card buttons (safe, everyday actions)
 MENU_COMMANDS: list[tuple[str, str, str]] = [
     ("/ping", "Health Check", "Verify the bot and VM are online"),
     ("/plan", "Evening Trade Plan", "Latest screener picks and scores"),
@@ -22,14 +24,10 @@ MENU_COMMANDS: list[tuple[str, str, str]] = [
 ]
 
 
-def user_command_text(cmd: str, *, bot_name: str = "Hermes") -> str:
-    """Human-typed command for group spaces (no leading slash required)."""
-    alias = cmd.lstrip("/")
-    return f"@{bot_name} {alias}"
-
-
-def hermes_about_markdown() -> str:
+def hermes_about_markdown(*, bot_email: str = "", bot_name: str = "Hermes") -> str:
     """Markdown description of the Hermes bot."""
+    tagged = format_bot_mention(bot_email=bot_email, bot_name=bot_name)
+    example = format_user_command("plan", bot_email=bot_email, bot_name=bot_name)
     return (
         "**Hermes — NSE Intraday Trading Assistant**\n\n"
         "Hermes automates your end-to-end trading workflow on the VM:\n\n"
@@ -39,28 +37,27 @@ def hermes_about_markdown() -> str:
         "and yesterday's screener to refine today's watchlist.\n\n"
         "**Market hours (9:00–15:30)** — Runs Opening Range Breakout (ORB) paper trades "
         "on the morning plan. Signals, entries, and P&L are logged to MongoDB.\n\n"
-        "**ChatOps (this bot)** — In this space, @mention Hermes and send a command "
-        "(example: `@Hermes plan`).\n\n"
+        f"**ChatOps** — @mention {tagged} or tap a button below. "
+        f"You can also type: `{example}`\n\n"
         "_Paper mode only — no real broker orders._"
     )
 
 
-def help_menu_markdown(*, bot_name: str = "Hermes") -> str:
+def help_menu_markdown(*, bot_email: str = "", bot_name: str = "Hermes") -> str:
+    tagged = format_bot_mention(bot_email=bot_email, bot_name=bot_name)
     return (
-        "**How to run a command**\n\n"
-        "In group spaces you must @mention Hermes. Card buttons do not work on this "
-        "VM (no public webhook). Copy and send one of these:\n\n"
+        f"**Tap a button below** or send a tagged command to {tagged}:\n\n"
         + "\n".join(
-            f"- `{user_command_text(cmd, bot_name=bot_name)}` — {label}"
+            f"- `{format_user_command(cmd, bot_email=bot_email, bot_name=bot_name)}` — {label}"
             for cmd, label, _ in MENU_COMMANDS
         )
-        + "\n\n_Short form works too: `@Hermes plan` or `@Hermes /plan`._\n"
-        + "_Advanced: `@Hermes pnl`, `@Hermes kill`_"
+        + "\n\n_Advanced: `@Hermes pnl`, `@Hermes kill`_"
     )
 
 
-def build_help_adaptive_card(*, bot_name: str = "Hermes") -> dict[str, Any]:
-    """Adaptive Card listing copy-paste commands (no Submit buttons)."""
+def build_help_adaptive_card(*, bot_email: str = "", bot_name: str = "Hermes") -> dict[str, Any]:
+    """Adaptive Card with Submit buttons for each command."""
+    tagged = format_bot_mention(bot_email=bot_email, bot_name=bot_name)
     body: list[dict[str, Any]] = [
         {
             "type": "TextBlock",
@@ -72,9 +69,8 @@ def build_help_adaptive_card(*, bot_name: str = "Hermes") -> dict[str, Any]:
         {
             "type": "TextBlock",
             "text": (
-                "Copy a command below, paste it in the message box, and send. "
-                "You must include @Hermes — card buttons cannot run commands "
-                "without a public webhook URL."
+                f"Tap a button to run a command. In group spaces you can also type "
+                f"{format_user_command('plan', bot_email=bot_email, bot_name=bot_name)}."
             ),
             "isSubtle": True,
             "wrap": True,
@@ -82,7 +78,6 @@ def build_help_adaptive_card(*, bot_name: str = "Hermes") -> dict[str, Any]:
     ]
 
     for cmd, label, desc in MENU_COMMANDS:
-        copy_text = user_command_text(cmd, bot_name=bot_name)
         body.append(
             {
                 "type": "ColumnSet",
@@ -110,15 +105,15 @@ def build_help_adaptive_card(*, bot_name: str = "Hermes") -> dict[str, Any]:
                         "width": "auto",
                         "items": [
                             {
-                                "type": "Container",
-                                "style": "emphasis",
-                                "items": [
+                                "type": "ActionSet",
+                                "actions": [
                                     {
-                                        "type": "TextBlock",
-                                        "text": copy_text,
-                                        "fontType": "Monospace",
-                                        "horizontalAlignment": "Center",
-                                        "wrap": False,
+                                        "type": "Action.Submit",
+                                        "title": cmd,
+                                        "data": {
+                                            "command": cmd,
+                                            "callback_keyword": f"callback___{cmd}",
+                                        },
                                     }
                                 ],
                             }
@@ -128,6 +123,16 @@ def build_help_adaptive_card(*, bot_name: str = "Hermes") -> dict[str, Any]:
             }
         )
 
+    body.append(
+        {
+            "type": "TextBlock",
+            "text": f"Bot tag for copy/paste: {tagged}",
+            "isSubtle": True,
+            "size": "Small",
+            "wrap": True,
+        }
+    )
+
     return {
         "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
         "type": "AdaptiveCard",
@@ -136,10 +141,10 @@ def build_help_adaptive_card(*, bot_name: str = "Hermes") -> dict[str, Any]:
     }
 
 
-def help_message_attachments(*, bot_name: str = "Hermes") -> list[dict[str, Any]]:
+def help_message_attachments(*, bot_email: str = "", bot_name: str = "Hermes") -> list[dict[str, Any]]:
     return [
         {
             "contentType": "application/vnd.microsoft.card.adaptive",
-            "content": build_help_adaptive_card(bot_name=bot_name),
+            "content": build_help_adaptive_card(bot_email=bot_email, bot_name=bot_name),
         }
     ]

@@ -22,10 +22,15 @@ class TestHandleCommand:
         chatops.handle_command("/ping", token="tok", room_id="room")
         mock_reply.assert_called_once()
 
+    @patch.object(chatops, "get_bot_identity", return_value={"displayName": "Hermes", "email": "hermes@webex.bot", "id": "bot"})
     @patch.object(chatops, "send_help_card")
-    def test_help(self, mock_help):
+    def test_help(self, mock_help, _mock_identity):
         chatops.handle_command("/help", token="tok", room_id="room")
-        mock_help.assert_called_once_with(token="tok", room_id="room", include_about=True)
+        mock_help.assert_called_once()
+        kwargs = mock_help.call_args.kwargs
+        assert kwargs["token"] == "tok"
+        assert kwargs["room_id"] == "room"
+        assert kwargs["include_about"] is True
 
     @patch.object(chatops, "send_webex_message")
     @patch.object(chatops, "send_webex_reply")
@@ -113,6 +118,7 @@ class TestPollingHelpers:
                 room_type="group",
                 bot_id="bot",
                 bot_name="Hermes",
+                bot_email="hermes@webex.bot",
                 state=state,
                 state_file=state_file,
             )
@@ -137,6 +143,7 @@ class TestPollingHelpers:
                     room_type="group",
                     bot_id="bot",
                     bot_name="Hermes",
+                    bot_email="hermes@webex.bot",
                     state=state,
                     state_file=state_file,
                 )

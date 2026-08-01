@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     bot_public_url: str = Field(default="", alias="BOT_PUBLIC_URL")
     bot_port: int = Field(default=5050, alias="BOT_PORT")
     bot_poll_interval_sec: float = Field(default=5.0, alias="BOT_POLL_INTERVAL_SEC")
+    bot_use_websocket: bool = Field(default=True, alias="BOT_USE_WEBSOCKET")
     bot_state_file: str = Field(default="", alias="BOT_STATE_FILE")
 
     # Paper Trading / Agent
