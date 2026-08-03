@@ -1,8 +1,9 @@
 {
-    "trading_date": "2026-08-02",
-    "generated_at": "2026-08-01 17:17:09 IST",
+    "trading_date": "2026-08-04",
+    "generated_at": "2026-08-03 18:52:23 IST",
     "universe": "small",
     "symbols": {
-        "PERSISTENT": "18365"
+        "PERSISTENT": "18365",
+        "PAYTM": "6705"
     }
 }
