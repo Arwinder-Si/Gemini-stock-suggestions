@@ -1,12 +1,12 @@
 {
-    "trading_date": "2026-08-04",
-    "generated_at": "2026-08-03 18:52:19 IST",
+    "trading_date": "2026-08-05",
+    "generated_at": "2026-08-04 17:51:15 IST",
     "universe": "large",
     "symbols": {
-        "PERSISTENT": "18365",
-        "MANAPPURAM": "19061",
-        "CHOLAFIN": "685",
-        "DIVISLAB": "10940",
-        "MARUTI": "10999"
+        "TRENT": "1964",
+        "GLAND": "1186",
+        "SBILIFE": "21808",
+        "KEI": "13310",
+        "PAYTM": "6705"
     }
 }
