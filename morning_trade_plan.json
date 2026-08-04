@@ -1,11 +1,49 @@
 {
-    "trading_date": "2026-08-03",
-    "generated_at": "2026-08-03 11:48:47 IST",
+    "trading_date": "2026-08-04",
+    "generated_at": "2026-08-04 11:14:00 IST",
     "source": "morning_refiner",
-    "market_regime": "NEUTRAL-BEAR",
-    "gap_prediction_pct": -0.33555939838442006,
-    "gap_bias": "Mild Bearish Open",
+    "market_regime": "BULLISH",
+    "gap_prediction_pct": 0.7735751121452423,
+    "gap_bias": "Strong Bullish Open (Gap Up > 0.5%)",
     "min_morning_score": 60.0,
-    "symbols": {},
-    "rankings": []
+    "symbols": {
+        "MANAPPURAM": "19061",
+        "PERSISTENT": "18365",
+        "CHOLAFIN": "685"
+    },
+    "rankings": [
+        {
+            "symbol": "MANAPPURAM",
+            "morning_score": 64.0,
+            "screener_score": 90,
+            "sentiment_7d": 0.0,
+            "sector": "NBFC",
+            "vol_ratio": 3.5,
+            "rsi": 67.0,
+            "security_id": "19061",
+            "in_evening_plan": true
+        },
+        {
+            "symbol": "PERSISTENT",
+            "morning_score": 64.0,
+            "screener_score": 90,
+            "sentiment_7d": 0.0,
+            "sector": "IT",
+            "vol_ratio": 1.9,
+            "rsi": 69.0,
+            "security_id": "18365",
+            "in_evening_plan": true
+        },
+        {
+            "symbol": "CHOLAFIN",
+            "morning_score": 63.4,
+            "screener_score": 89,
+            "sentiment_7d": 0.0,
+            "sector": "NBFC",
+            "vol_ratio": 1.4,
+            "rsi": 64.0,
+            "security_id": "685",
+            "in_evening_plan": true
+        }
+    ]
 }
