@@ -1,12 +1,12 @@
 {
-    "trading_date": "2026-08-05",
-    "generated_at": "2026-08-04 17:51:15 IST",
+    "trading_date": "2026-08-06",
+    "generated_at": "2026-08-05 17:48:57 IST",
     "universe": "large",
     "symbols": {
-        "TRENT": "1964",
-        "GLAND": "1186",
-        "SBILIFE": "21808",
-        "KEI": "13310",
-        "PAYTM": "6705"
+        "RITES": "3761",
+        "BATAINDIA": "371",
+        "DEEPAKNTR": "19943",
+        "PIDILITIND": "2664",
+        "MPHASIS": "4503"
     }
 }

@@ -1,10 +1,10 @@
 {
-    "trading_date": "2026-08-05",
-    "generated_at": "2026-08-04 17:51:18 IST",
+    "trading_date": "2026-08-06",
+    "generated_at": "2026-08-05 17:49:02 IST",
     "universe": "small",
     "symbols": {
-        "CAMS": "342",
-        "PAYTM": "6705",
-        "NAM-INDIA": "357"
+        "NAM-INDIA": "357",
+        "NYKAA": "6545",
+        "CAMS": "342"
     }
 }
