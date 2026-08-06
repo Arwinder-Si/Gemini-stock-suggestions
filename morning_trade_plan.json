@@ -1,61 +1,11 @@
 {
-    "trading_date": "2026-08-05",
-    "generated_at": "2026-08-05 11:13:06 IST",
+    "trading_date": "2026-08-06",
+    "generated_at": "2026-08-06 11:15:33 IST",
     "source": "morning_refiner",
     "market_regime": "BULLISH",
-    "gap_prediction_pct": 2.6395551340600556,
-    "gap_bias": "Strong Bullish Open (Gap Up > 0.5%)",
+    "gap_prediction_pct": -0.471697311395475,
+    "gap_bias": "Mild Bearish Open",
     "min_morning_score": 60.0,
-    "symbols": {
-        "TRENT": "1964",
-        "GLAND": "1186",
-        "KEI": "13310",
-        "SBILIFE": "21808"
-    },
-    "rankings": [
-        {
-            "symbol": "TRENT",
-            "morning_score": 67.0,
-            "screener_score": 95,
-            "sentiment_7d": 0.0,
-            "sector": "Retail",
-            "vol_ratio": 1.5,
-            "rsi": 63.0,
-            "security_id": "1964",
-            "in_evening_plan": true
-        },
-        {
-            "symbol": "GLAND",
-            "morning_score": 64.0,
-            "screener_score": 90,
-            "sentiment_7d": 0.0,
-            "sector": "Pharma",
-            "vol_ratio": 1.6,
-            "rsi": 64.0,
-            "security_id": "1186",
-            "in_evening_plan": true
-        },
-        {
-            "symbol": "KEI",
-            "morning_score": 61.0,
-            "screener_score": 85,
-            "sentiment_7d": 0.0,
-            "sector": "Cap Goods",
-            "vol_ratio": 8.2,
-            "rsi": 68.0,
-            "security_id": "13310",
-            "in_evening_plan": true
-        },
-        {
-            "symbol": "SBILIFE",
-            "morning_score": 61.0,
-            "screener_score": 85,
-            "sentiment_7d": 0.0,
-            "sector": "Insurance",
-            "vol_ratio": 1.5,
-            "rsi": 63.0,
-            "security_id": "21808",
-            "in_evening_plan": true
-        }
-    ]
+    "symbols": {},
+    "rankings": []
 }
