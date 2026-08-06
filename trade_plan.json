@@ -1,12 +1,12 @@
 {
-    "trading_date": "2026-08-06",
-    "generated_at": "2026-08-05 17:48:57 IST",
+    "trading_date": "2026-08-07",
+    "generated_at": "2026-08-06 17:51:28 IST",
     "universe": "large",
     "symbols": {
+        "AUBANK": "21238",
+        "CHOLAFIN": "685",
+        "TRENT": "1964",
         "RITES": "3761",
-        "BATAINDIA": "371",
-        "DEEPAKNTR": "19943",
-        "PIDILITIND": "2664",
-        "MPHASIS": "4503"
+        "COCHINSHIP": "21508"
     }
 }

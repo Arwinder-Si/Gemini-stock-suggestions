@@ -1,10 +1,9 @@
 {
-    "trading_date": "2026-08-06",
-    "generated_at": "2026-08-05 17:49:02 IST",
+    "trading_date": "2026-08-07",
+    "generated_at": "2026-08-06 17:51:33 IST",
     "universe": "small",
     "symbols": {
-        "NAM-INDIA": "357",
-        "NYKAA": "6545",
-        "CAMS": "342"
+        "COCHINSHIP": "21508",
+        "AWL": "8110"
     }
 }
