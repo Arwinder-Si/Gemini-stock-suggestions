@@ -211,7 +211,7 @@ def run_weekly_analytics(*, post_webex: bool = True) -> str:
     backfilled = backfill_picks_from_runs(store)
     if backfilled:
         logger.info("Backfilled %d pipeline pick(s) from run archives", backfilled)
-    enriched = enrich_due_picks(store, through_date=friday)
+    enriched = enrich_due_picks(store, through_date=friday, force=False)
     logger.info("Enriched %d pipeline pick(s) before weekly report", enriched)
 
     report = generate_weekly_pick_report(monday, friday, store=store)

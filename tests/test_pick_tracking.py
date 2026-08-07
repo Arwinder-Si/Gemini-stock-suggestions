@@ -102,6 +102,23 @@ def test_pipeline_pick_upsert_preserves_id(screener_files):
     assert len(store.get_pipeline_picks()) == 1
 
 
+def test_enrich_recommendation_pipeline_uses_open_not_screener_close():
+    """Pipeline picks must benchmark from session open, not stale screener close."""
+    rec = Recommendation(
+        symbol="COCHINSHIP",
+        pick_source="evening_large",
+        strategy="PIPELINE",
+        action="BUY",
+        entry_price=10.0,  # stale/wrong screener close
+        target_price=10.2,
+        stop_loss=9.9,
+    )
+    outcome = enrich_recommendation(rec, day_open=1000, day_high=1025, day_low=995, day_close=1010)
+    assert outcome.actual_entry_price == 1000
+    assert outcome.final_pnl_pct == 1.0  # (1010-1000)/1000
+    assert outcome.max_gain_pct == 2.5
+
+
 def test_enrich_recommendation_buy():
     rec = Recommendation(
         symbol="M&M",
