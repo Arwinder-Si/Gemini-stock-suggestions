@@ -1,10 +1,10 @@
 {
-    "trading_date": "2026-08-06",
-    "generated_at": "2026-08-06 11:15:33 IST",
+    "trading_date": "2026-08-07",
+    "generated_at": "2026-08-07 10:22:14 IST",
     "source": "morning_refiner",
     "market_regime": "BULLISH",
-    "gap_prediction_pct": -0.471697311395475,
-    "gap_bias": "Mild Bearish Open",
+    "gap_prediction_pct": -0.571074243538289,
+    "gap_bias": "Strong Bearish Open (Gap Down < -0.5%)",
     "min_morning_score": 60.0,
     "symbols": {},
     "rankings": []
