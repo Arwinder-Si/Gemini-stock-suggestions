@@ -91,8 +91,8 @@ class MongoAnalyticsStore(AnalyticsStore):
                 created += 1
             except Exception as e:
                 code = getattr(e, "code", None)
-                if code == 86:
-                    logger.debug("Index %s on %s already exists with different spec", kwargs.get("name"), coll_name)
+                if code in (85, 86):
+                    logger.debug("Index %s on %s already exists: %s", kwargs.get("name"), coll_name, e)
                 else:
                     logger.warning("Could not create index %s on %s: %s", kwargs.get("name"), coll_name, e)
         logger.info("MongoDB analytics indexes checked (%d specs).", len(index_specs))
@@ -278,6 +278,7 @@ class InMemoryAnalyticsStore(AnalyticsStore):
                 and existing.symbol == rec.symbol
                 and existing.pick_source == rec.pick_source
             ):
+                rec.recommendation_id = existing.recommendation_id
                 self.recommendations[i] = rec
                 return rec.recommendation_id
         self.recommendations.append(rec)

@@ -22,6 +22,24 @@ from hermes import artifacts
 logger = logging.getLogger(__name__)
 
 
+def _load_dotenv() -> None:
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        pass
+
+
+def _optional_env_satisfied(var_name: str) -> bool:
+    """True when an env var is set in the process environment or .env (via Settings)."""
+    if os.environ.get(var_name, "").strip():
+        return True
+    if var_name == "MONGODB_URI":
+        from hermes.config import get_config
+        return bool(get_config().mongodb_uri)
+    return False
+
+
 @dataclass
 class Step:
     """One unit of pipeline work.
@@ -56,6 +74,7 @@ def run_steps(
     Raises the underlying exception if a required step fails (after recording it).
     Returns the final manifest.
     """
+    _load_dotenv()
     skip = set(skip or [])
     manifest = artifacts.load_manifest(trading_date)
 
@@ -70,7 +89,7 @@ def run_steps(
             logger.info("Skipping step %s (already completed)", step.name)
             continue
 
-        if step.optional_env and not os.environ.get(step.optional_env):
+        if step.optional_env and not _optional_env_satisfied(step.optional_env):
             logger.info("Skipping step %s (no %s)", step.name, step.optional_env)
             artifacts.record_step(
                 manifest, step.name, artifacts.STEP_SKIPPED, reason=f"no {step.optional_env}"

@@ -23,6 +23,9 @@ echo "📝 Creating wrapper scripts..."
 cat << 'EOF' > run_morning.sh
 #!/bin/bash
 cd "$(dirname "$0")"
+set -a
+[ -f .env ] && source .env
+set +a
 source venv/bin/activate
 python -m hermes.cli morning
 EOF
@@ -31,6 +34,9 @@ chmod +x run_morning.sh
 cat << 'EOF' > run_evening.sh
 #!/bin/bash
 cd "$(dirname "$0")"
+set -a
+[ -f .env ] && source .env
+set +a
 source venv/bin/activate
 python -m hermes.cli evening
 EOF
@@ -39,6 +45,9 @@ chmod +x run_evening.sh
 cat << 'EOF' > run_live_bot.sh
 #!/bin/bash
 cd "$(dirname "$0")"
+set -a
+[ -f .env ] && source .env
+set +a
 source venv/bin/activate
 # Run the live bot for exactly 6.5 hours (9:00 AM to 3:30 PM), then kill it
 timeout 23400 python -m hermes.cli live
@@ -48,6 +57,9 @@ chmod +x run_live_bot.sh
 cat << 'EOF' > run_pnl.sh
 #!/bin/bash
 cd "$(dirname "$0")"
+set -a
+[ -f .env ] && source .env
+set +a
 source venv/bin/activate
 python -m hermes.cli pnl
 EOF
@@ -56,6 +68,9 @@ chmod +x run_pnl.sh
 cat << 'EOF' > run_weekly.sh
 #!/bin/bash
 cd "$(dirname "$0")"
+set -a
+[ -f .env ] && source .env
+set +a
 source venv/bin/activate
 python -m hermes.cli weekly
 EOF

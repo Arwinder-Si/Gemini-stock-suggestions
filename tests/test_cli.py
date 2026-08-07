@@ -55,9 +55,16 @@ def test_run_steps_skips_completed_unless_forced(var_root):
     assert counter["n"] == 2
 
 
-def test_run_steps_skips_optional_env_when_missing(var_root):
+def test_run_steps_skips_optional_env_when_missing(var_root, monkeypatch):
     calls: list[str] = []
     steps = [Step("mongo", func=lambda: calls.append("mongo"), optional_env="MONGODB_URI")]
+
+    monkeypatch.delenv("MONGODB_URI", raising=False)
+    monkeypatch.setattr("hermes.pipelines.runner._load_dotenv", lambda: None)
+    monkeypatch.setattr(
+        "hermes.config.get_config",
+        lambda: type("Cfg", (), {"mongodb_uri": ""})(),
+    )
 
     manifest = run_steps(steps, TD)
 

@@ -17,6 +17,7 @@ from hermes.analytics.pick_tracker import (
     PICK_EVENING_LARGE,
     PICK_EVENING_SMALL,
     PICK_MORNING,
+    backfill_picks_from_runs,
     get_analytics_store,
 )
 from hermes.clock import now_ist, trading_date_ist
@@ -207,6 +208,9 @@ def run_weekly_analytics(*, post_webex: bool = True) -> str:
         return msg
 
     monday, friday = week_range()
+    backfilled = backfill_picks_from_runs(store)
+    if backfilled:
+        logger.info("Backfilled %d pipeline pick(s) from run archives", backfilled)
     enriched = enrich_due_picks(store, through_date=friday)
     logger.info("Enriched %d pipeline pick(s) before weekly report", enriched)
 

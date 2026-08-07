@@ -57,7 +57,16 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _load_env() -> None:
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        pass
+
+
 def main(argv: list[str] | None = None) -> int:
+    _load_env()
     argv = list(sys.argv[1:] if argv is None else argv)
 
     # For `live`, everything after the subcommand passes through to main.py.

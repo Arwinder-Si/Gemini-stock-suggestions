@@ -162,18 +162,24 @@ def test_enrich_due_picks_skips_evaluated(mock_fetch):
 
 
 def test_week_range_monday_friday():
-    # Saturday Aug 1 2026 -> last trading week Mon Jul 28 to Fri Aug 1
+    # Saturday Aug 1 2026 -> last trading week Mon Jul 27 to Fri Jul 31
     mon, fri = week_range(date(2026, 8, 1))
-    assert mon == date(2026, 7, 28)
-    assert fri == date(2026, 8, 1)
+    assert mon == date(2026, 7, 27)
+    assert fri == date(2026, 7, 31)
     assert mon.weekday() == 0
     assert fri.weekday() == 4
 
 
 def test_week_range_midweek():
     mon, fri = week_range(date(2026, 7, 30))
-    assert mon == date(2026, 7, 28)
-    assert fri == date(2026, 8, 1)
+    assert mon == date(2026, 7, 27)
+    assert fri == date(2026, 7, 31)
+
+
+def test_week_range_friday_cron():
+    mon, fri = week_range(date(2026, 8, 7))
+    assert mon == date(2026, 8, 3)
+    assert fri == date(2026, 8, 7)
 
 
 def test_generate_weekly_pick_report_with_data():
@@ -237,6 +243,34 @@ def test_generate_weekly_pick_report_upcoming_picks():
     assert "pending until then" in report.lower() or "next trading day" in report.lower()
 
 
-def test_generate_weekly_pick_report_no_mongo():
-    report = generate_weekly_pick_report(store=None)
+def test_generate_weekly_pick_report_no_mongo(monkeypatch):
+    monkeypatch.setattr("hermes.analytics.weekly_pick_report.get_analytics_store", lambda: None)
+    report = generate_weekly_pick_report()
     assert "MongoDB not configured" in report
+
+
+def test_backfill_picks_from_runs(tmp_path, monkeypatch):
+    from hermes import artifacts
+    from hermes.analytics.pick_tracker import backfill_picks_from_runs
+
+    monkeypatch.setenv("HERMES_VAR_DIR", str(tmp_path / "var"))
+    run_dir = artifacts.run_dir(date(2026, 8, 4))
+    run_dir.mkdir(parents=True)
+
+    plan = {"trading_date": "2026-08-05", "symbols": {"M&M": "2031"}}
+    (run_dir / "trade_plan.json").write_text(json.dumps(plan))
+    pd.DataFrame({
+        "Stock": ["M&M"],
+        "Sector": ["Auto"],
+        "Close": [3400.0],
+        "Score": [86],
+        "Vol_Ratio": [2.3],
+        "RSI": [67.0],
+    }).to_csv(run_dir / "screener_results.csv", index=False)
+
+    store = InMemoryAnalyticsStore()
+    count = backfill_picks_from_runs(store)
+    assert count == 1
+    picks = store.get_pipeline_picks()
+    assert picks[0].symbol == "M&M"
+    assert picks[0].trading_date == "2026-08-05"

@@ -11,6 +11,7 @@ import json
 import logging
 import os
 from dataclasses import asdict
+from pathlib import Path
 
 import pandas as pd
 
@@ -30,9 +31,10 @@ DEFAULT_TARGET_PCT = 0.02
 DEFAULT_STOP_PCT = 0.01
 
 
-def _load_screener_lookup() -> dict[str, dict]:
+def _load_screener_lookup(base_dir: str = ".") -> dict[str, dict]:
     frames = []
-    for path in ("screener_results.csv", "screener_results_smallcap.csv"):
+    for name in ("screener_results.csv", "screener_results_smallcap.csv"):
+        path = os.path.join(base_dir, name)
         if os.path.exists(path):
             frames.append(pd.read_csv(path))
     if not frames:
@@ -41,9 +43,10 @@ def _load_screener_lookup() -> dict[str, dict]:
     return df.set_index("Stock").to_dict(orient="index")
 
 
-def _load_regime() -> str:
-    if os.path.exists("market_regime.txt"):
-        with open("market_regime.txt", encoding="utf-8") as f:
+def _load_regime(base_dir: str = ".") -> str:
+    path = os.path.join(base_dir, "market_regime.txt")
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as f:
             return f.read().strip()
     return "UNKNOWN"
 
@@ -57,6 +60,7 @@ def _build_recommendation(
     confidence_score: float = 0.0,
     reasoning: str = "",
     extra_indicators: dict | None = None,
+    market_regime: str = "UNKNOWN",
 ) -> Recommendation:
     close = float(screener_row.get("Close", 0)) if screener_row else 0.0
     sector = str(screener_row.get("Sector", "")) if screener_row else ""
@@ -84,65 +88,48 @@ def _build_recommendation(
         target_price=target,
         confidence_score=confidence_score,
         reasoning=reasoning,
-        market_regime=_load_regime(),
+        market_regime=market_regime,
         supporting_indicators=indicators,
     )
 
 
-def persist_evening_picks(store: MongoAnalyticsStore) -> int:
-    """Save evening screener trade-plan symbols to MongoDB."""
+def _persist_evening_plan(
+    store: MongoAnalyticsStore,
+    plan: dict,
+    pick_source: str,
+    screener: dict[str, dict],
+    *,
+    market_regime: str = "UNKNOWN",
+) -> int:
+    trading_date = plan.get("trading_date", "")
+    symbols = plan.get("symbols") or {}
+    if not trading_date or not symbols:
+        return 0
+
     count = 0
-    screener = _load_screener_lookup()
-    plans = [
-        ("trade_plan.json", PICK_EVENING_LARGE),
-        ("trade_plan_smallcap.json", PICK_EVENING_SMALL),
-    ]
-
-    for plan_file, pick_source in plans:
-        if not os.path.exists(plan_file):
-            logger.warning("No %s — skipping %s picks", plan_file, pick_source)
-            continue
-
-        with open(plan_file, encoding="utf-8") as f:
-            plan = json.load(f)
-
-        trading_date = plan.get("trading_date", "")
-        symbols = plan.get("symbols") or {}
-        if not trading_date or not symbols:
-            logger.warning("%s has no trading_date or symbols", plan_file)
-            continue
-
-        for symbol in symbols:
-            row = screener.get(symbol)
-            score = float(row.get("Score", 0)) if row else 0.0
-            rec = _build_recommendation(
-                trading_date=trading_date,
-                symbol=symbol,
-                pick_source=pick_source,
-                screener_row=row,
-                confidence_score=score,
-                reasoning=f"Evening screener pick ({pick_source})",
-            )
-            store.save_pipeline_pick(rec)
-            count += 1
-            logger.info("Saved evening pick %s %s (%s)", trading_date, symbol, pick_source)
-
+    for symbol in symbols:
+        row = screener.get(symbol)
+        score = float(row.get("Score", 0)) if row else 0.0
+        rec = _build_recommendation(
+            trading_date=trading_date,
+            symbol=symbol,
+            pick_source=pick_source,
+            screener_row=row,
+            confidence_score=score,
+            reasoning=f"Evening screener pick ({pick_source})",
+            market_regime=market_regime,
+        )
+        store.save_pipeline_pick(rec)
+        count += 1
+        logger.info("Saved evening pick %s %s (%s)", trading_date, symbol, pick_source)
     return count
 
 
-def persist_morning_picks(store: MongoAnalyticsStore) -> int:
-    """Save morning refined trade-plan symbols to MongoDB."""
-    plan_file = "morning_trade_plan.json"
-    if not os.path.exists(plan_file):
-        raise FileNotFoundError(f"{plan_file} not found — run morning pipeline first.")
-
-    with open(plan_file, encoding="utf-8") as f:
-        plan = json.load(f)
-
+def _persist_morning_plan(store: MongoAnalyticsStore, plan: dict, *, market_regime: str = "UNKNOWN") -> int:
     trading_date = plan.get("trading_date", "")
     rankings = plan.get("rankings") or []
-    if not trading_date:
-        raise ValueError(f"{plan_file} missing trading_date")
+    if not trading_date or not rankings:
+        return 0
 
     count = 0
     for row in rankings:
@@ -162,6 +149,7 @@ def persist_morning_picks(store: MongoAnalyticsStore) -> int:
             },
             confidence_score=float(row.get("morning_score", 0)),
             reasoning="Morning refiner pick",
+            market_regime=market_regime,
             extra_indicators={
                 "morning_score": row.get("morning_score"),
                 "sentiment_7d": row.get("sentiment_7d"),
@@ -172,8 +160,82 @@ def persist_morning_picks(store: MongoAnalyticsStore) -> int:
         store.save_pipeline_pick(rec)
         count += 1
         logger.info("Saved morning pick %s %s", trading_date, symbol)
-
     return count
+
+
+def persist_evening_picks(store: MongoAnalyticsStore, *, base_dir: str = ".") -> int:
+    """Save evening screener trade-plan symbols to MongoDB."""
+    screener = _load_screener_lookup(base_dir)
+    regime = _load_regime(base_dir)
+    count = 0
+    for plan_file, pick_source in (
+        ("trade_plan.json", PICK_EVENING_LARGE),
+        ("trade_plan_smallcap.json", PICK_EVENING_SMALL),
+    ):
+        path = os.path.join(base_dir, plan_file)
+        if not os.path.exists(path):
+            logger.warning("No %s — skipping %s picks", path, pick_source)
+            continue
+        with open(path, encoding="utf-8") as f:
+            plan = json.load(f)
+        count += _persist_evening_plan(store, plan, pick_source, screener, market_regime=regime)
+    return count
+
+
+def persist_morning_picks(store: MongoAnalyticsStore, *, base_dir: str = ".") -> int:
+    """Save morning refined trade-plan symbols to MongoDB."""
+    plan_file = os.path.join(base_dir, "morning_trade_plan.json")
+    if not os.path.exists(plan_file):
+        raise FileNotFoundError(f"{plan_file} not found — run morning pipeline first.")
+
+    with open(plan_file, encoding="utf-8") as f:
+        plan = json.load(f)
+    regime = _load_regime(base_dir)
+    return _persist_morning_plan(store, plan, market_regime=regime)
+
+
+def backfill_picks_from_runs(store: MongoAnalyticsStore) -> int:
+    """Load trade plans archived under var/runs/<date>/ into MongoDB.
+
+    Used when persist_picks was skipped during cron (e.g. .env not exported)
+    but plan files were still copied into run directories.
+    """
+    from hermes import artifacts
+
+    runs_root = artifacts.runs_dir()
+    if not runs_root.is_dir():
+        return 0
+
+    total = 0
+    for run_path in sorted(runs_root.iterdir()):
+        if not run_path.is_dir():
+            continue
+        base = str(run_path)
+        screener = _load_screener_lookup(base)
+        regime = _load_regime(base)
+
+        for plan_name, pick_source in (
+            ("trade_plan.json", PICK_EVENING_LARGE),
+            ("trade_plan_smallcap.json", PICK_EVENING_SMALL),
+        ):
+            plan_path = run_path / plan_name
+            if not plan_path.is_file():
+                continue
+            with open(plan_path, encoding="utf-8") as f:
+                plan = json.load(f)
+            total += _persist_evening_plan(
+                store, plan, pick_source, screener, market_regime=regime
+            )
+
+        morning_path = run_path / "morning_trade_plan.json"
+        if morning_path.is_file():
+            with open(morning_path, encoding="utf-8") as f:
+                plan = json.load(f)
+            total += _persist_morning_plan(store, plan, market_regime=regime)
+
+    if total:
+        logger.info("Backfilled %d pipeline pick(s) from %s", total, runs_root)
+    return total
 
 
 def get_analytics_store() -> MongoAnalyticsStore | None:

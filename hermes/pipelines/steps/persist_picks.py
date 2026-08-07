@@ -9,6 +9,7 @@ import logging
 import sys
 
 from hermes.analytics.pick_tracker import (
+    backfill_picks_from_runs,
     get_analytics_store,
     persist_evening_picks,
     persist_morning_picks,
@@ -26,6 +27,11 @@ def main(argv: list[str] | None = None) -> int:
         default="all",
         help="Which pipeline picks to persist",
     )
+    parser.add_argument(
+        "--backfill",
+        action="store_true",
+        help="Also load picks from var/runs/*/ archived trade plans",
+    )
     args = parser.parse_args(argv)
 
     store = get_analytics_store()
@@ -34,10 +40,15 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     total = 0
+    if args.backfill:
+        total += backfill_picks_from_runs(store)
     if args.source in ("evening", "all"):
         total += persist_evening_picks(store)
     if args.source in ("morning", "all"):
-        total += persist_morning_picks(store)
+        try:
+            total += persist_morning_picks(store)
+        except FileNotFoundError as exc:
+            logger.warning("%s", exc)
 
     logger.info("Persisted %d pipeline pick(s) to MongoDB", total)
     return 0
