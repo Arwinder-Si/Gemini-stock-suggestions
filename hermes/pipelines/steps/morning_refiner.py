@@ -19,6 +19,7 @@ import pandas as pd
 from hermes.clock import now_ist, trading_date_ist
 from hermes.config import get_config
 from hermes.data import market_db
+from hermes.domain.earnings_calendar import load_calendar, refresh_buckets, symbols_for_session
 from hermes.domain.morning_score import compute_morning_score
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -81,6 +82,11 @@ def refine_morning_plan() -> dict:
     gap_pct = float(gap.get("prediction_pct", 0.0))
     gap_bias = gap.get("bias", "Unknown")
 
+    earnings_cal = load_calendar()
+    if earnings_cal:
+        earnings_cal = refresh_buckets(earnings_cal, trading_date_ist())
+    result_today = set(symbols_for_session(earnings_cal, "today"))
+
     if screener_df.empty:
         raise FileNotFoundError("No screener_results.csv found. Run the evening pipeline first.")
 
@@ -106,12 +112,14 @@ def refine_morning_plan() -> dict:
         sentiment = float(news.get("sentiment_7d", 0.0) or 0.0)
         has_reg = bool(news.get("has_neg_reg_news_7d", False))
 
+        earnings_today = symbol in result_today
         morning_score = compute_morning_score(
             screener_score=float(scr["Score"]),
             sentiment_7d=sentiment,
             gap_prediction_pct=gap_pct,
             has_reg_risk=has_reg,
             market_regime=regime,
+            earnings_result_today=earnings_today,
         )
         if morning_score is None or morning_score < MIN_MORNING_SCORE:
             continue
@@ -131,6 +139,7 @@ def refine_morning_plan() -> dict:
             "rsi": scr.get("RSI", 0),
             "security_id": str(sec_id),
             "in_evening_plan": symbol in evening_symbols,
+            "earnings_result_today": earnings_today,
         })
 
     rankings.sort(key=lambda r: r["morning_score"], reverse=True)
@@ -147,6 +156,7 @@ def refine_morning_plan() -> dict:
         "gap_prediction_pct": gap_pct,
         "gap_bias": gap_bias,
         "min_morning_score": MIN_MORNING_SCORE,
+        "earnings_result_today": sorted(result_today),
         "symbols": symbols,
         "rankings": selected,
     }

@@ -39,6 +39,11 @@ def build_steps() -> list[Step]:
         Step("security_ids", argv=[PY, M, "hermes.pipelines.steps.update_security_ids"], outputs=["nse_eq_mapping.json"]),
         Step("news", argv=[PY, M, "hermes.pipelines.steps.news_sentiment"], outputs=["news_features.csv", "news_raw_articles.csv"]),
         Step(
+            "earnings_calendar",
+            argv=[PY, M, "hermes.pipelines.steps.earnings_calendar_job"],
+            outputs=["earnings_calendar.json"],
+        ),
+        Step(
             "screener_large",
             argv=[PY, M, "hermes.pipelines.steps.comprehensive_screener", "--universe", "large"],
             outputs=["screener_results.csv", "market_regime.txt"],

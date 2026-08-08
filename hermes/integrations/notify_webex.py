@@ -22,7 +22,8 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='repla
 
 import pandas as pd
 import requests
-from hermes.clock import now_ist
+from hermes.clock import now_ist, trading_date_ist
+from hermes.domain.earnings_calendar import load_calendar, refresh_buckets
 
 try:
     from dotenv import load_dotenv
@@ -31,6 +32,32 @@ except ImportError:
     pass
 
 WEBEX_API = "https://webexapis.com/v1/messages"
+
+
+def _append_earnings_watchlist(msg: str, *, session: str) -> str:
+    """session: 'tomorrow' (evening) or 'today' (morning)."""
+    cal = load_calendar()
+    if not cal:
+        return msg
+    cal = refresh_buckets(cal, trading_date_ist())
+    key = "result_tomorrow" if session == "tomorrow" else "result_today"
+    symbols = cal.get(key) or []
+    if not symbols:
+        return msg
+
+    title = "Tomorrow" if session == "tomorrow" else "Today"
+    msg += f"### 📅 Results {title}\n\n"
+    msg += "_High volatility around result announcements — tighten risk or skip if setup is weak._\n\n"
+    for symbol in symbols:
+        entry = (cal.get("entries") or {}).get(symbol, {})
+        rd = entry.get("result_date", "—")
+        src = entry.get("source", "")
+        msg += f"- **{symbol}** — {rd}"
+        if src:
+            msg += f" _({src})_"
+        msg += "\n"
+    msg += "\n"
+    return msg
 
 
 def send_webex_message(markdown: str) -> bool:
@@ -121,6 +148,8 @@ def build_evening_message(universe="large") -> str:
                     msg += f"- ⚠️ **{r['symbol']}**: REGULATORY RISK\n"
             msg += "\n"
 
+    msg = _append_earnings_watchlist(msg, session="tomorrow")
+
     msg += "---\n_Run at market close. Trade plan auto-generated._"
     return msg
 
@@ -155,6 +184,8 @@ def build_morning_message(universe="large") -> str:
     except Exception as e:
         print(f"Error loading global context: {e}")
 
+    msg = _append_earnings_watchlist(msg, session="today")
+
     # 2. Morning-refined trade plan (combines screener + news + global gap)
     msg += "**🎯 TODAY'S REFINED TRADE PLAN**\n\n"
     morning_plan_path = "morning_trade_plan.json"
@@ -176,8 +207,9 @@ def build_morning_message(universe="large") -> str:
                 for i, row in enumerate(rankings, 1):
                     sent = row.get("sentiment_7d", 0)
                     sent_icon = "🟢" if sent > 0.05 else ("🔴" if sent < -0.05 else "⚪")
+                    result_flag = " 📅" if row.get("earnings_result_today") else ""
                     msg += (
-                        f"| {i} | **{row['symbol']}** | {row['morning_score']:.0f} | "
+                        f"| {i} | **{row['symbol']}**{result_flag} | {row['morning_score']:.0f} | "
                         f"{row['screener_score']} | {sent_icon} {sent:+.2f} | {row.get('sector', '')} |\n"
                     )
                 msg += "\n"

@@ -139,6 +139,17 @@ def generate_weekly_pick_report(
 
     metrics = compute_aggregate_metrics(trade_evals)
 
+    result_day_picks = [
+        p for p in picks if p.supporting_indicators.get("result_day")
+    ]
+    result_day_evals = [
+        e for e in trade_evals
+        if any(
+            p.recommendation_id == e.recommendation_id
+            for p in result_day_picks
+        )
+    ]
+
     lines.extend([
         "### Summary",
         f"- **Total picks:** {len(picks)}",
@@ -158,6 +169,17 @@ def generate_weekly_pick_report(
         src_eval = sum(1 for p in source_picks if p.recommendation_id in eval_by_id)
         label = SOURCE_LABELS.get(source, source)
         lines.append(f"| {label} | {len(source_picks)} | {src_eval} |")
+
+    if result_day_picks:
+        rd_metrics = compute_aggregate_metrics(result_day_evals) if result_day_evals else None
+        lines.extend([
+            "",
+            "### Result-Day Picks",
+            f"- **Count:** {len(result_day_picks)} (earnings/results on pick date)",
+        ])
+        if rd_metrics and result_day_evals:
+            lines.append(f"- **Win rate:** {rd_metrics.win_rate:.0f}% ({len(result_day_evals)} evaluated)")
+            lines.append(f"- **Avg return:** {rd_metrics.avg_return_pct:+.2f}%")
 
     lines.extend([
         "",

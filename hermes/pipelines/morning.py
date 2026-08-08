@@ -20,6 +20,11 @@ def build_steps() -> list[Step]:
     return [
         Step("global_signals", argv=[PY, M, "hermes.pipelines.steps.global_signals"]),
         Step(
+            "earnings_calendar",
+            argv=[PY, M, "hermes.pipelines.steps.earnings_calendar_job", "--refresh-only"],
+            outputs=["earnings_calendar.json"],
+        ),
+        Step(
             "morning_refiner",
             argv=[PY, M, "hermes.pipelines.steps.morning_refiner"],
             outputs=["morning_trade_plan.json"],

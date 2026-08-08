@@ -18,6 +18,8 @@ import pandas as pd
 from hermes.config import get_config
 from hermes.data.analytics_models import Recommendation
 from hermes.data.analytics_mongo import MongoAnalyticsStore
+from hermes.domain.earnings_calendar import is_result_day, load_calendar, refresh_buckets
+from hermes.clock import trading_date_ist
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +51,25 @@ def _load_regime(base_dir: str = ".") -> str:
         with open(path, encoding="utf-8") as f:
             return f.read().strip()
     return "UNKNOWN"
+
+
+def _load_earnings_calendar(base_dir: str = ".") -> dict | None:
+    path = os.path.join(base_dir, "earnings_calendar.json")
+    cal = load_calendar(path) if os.path.exists(path) else None
+    if cal:
+        return refresh_buckets(cal, trading_date_ist())
+    return None
+
+
+def _earnings_indicators(symbol: str, trading_date: str, calendar: dict | None) -> dict:
+    if not is_result_day(symbol, trading_date, calendar):
+        return {}
+    entry = (calendar.get("entries") or {}).get(symbol, {}) if calendar else {}
+    return {
+        "result_day": True,
+        "earnings_result_date": entry.get("result_date"),
+        "earnings_source": entry.get("source"),
+    }
 
 
 def _build_recommendation(
@@ -100,6 +121,7 @@ def _persist_evening_plan(
     screener: dict[str, dict],
     *,
     market_regime: str = "UNKNOWN",
+    base_dir: str = ".",
 ) -> int:
     trading_date = plan.get("trading_date", "")
     symbols = plan.get("symbols") or {}
@@ -107,6 +129,7 @@ def _persist_evening_plan(
         return 0
 
     count = 0
+    calendar = _load_earnings_calendar(base_dir)
     for symbol in symbols:
         row = screener.get(symbol)
         score = float(row.get("Score", 0)) if row else 0.0
@@ -118,6 +141,7 @@ def _persist_evening_plan(
             confidence_score=score,
             reasoning=f"Evening screener pick ({pick_source})",
             market_regime=market_regime,
+            extra_indicators=_earnings_indicators(symbol, trading_date, calendar),
         )
         store.save_pipeline_pick(rec)
         count += 1
@@ -125,17 +149,33 @@ def _persist_evening_plan(
     return count
 
 
-def _persist_morning_plan(store: MongoAnalyticsStore, plan: dict, *, market_regime: str = "UNKNOWN") -> int:
+def _persist_morning_plan(
+    store: MongoAnalyticsStore,
+    plan: dict,
+    *,
+    market_regime: str = "UNKNOWN",
+    base_dir: str = ".",
+) -> int:
     trading_date = plan.get("trading_date", "")
     rankings = plan.get("rankings") or []
     if not trading_date or not rankings:
         return 0
 
     count = 0
+    calendar = _load_earnings_calendar(base_dir)
     for row in rankings:
         symbol = row.get("symbol", "")
         if not symbol:
             continue
+        extra = {
+            "morning_score": row.get("morning_score"),
+            "sentiment_7d": row.get("sentiment_7d"),
+            "in_evening_plan": row.get("in_evening_plan"),
+            "gap_prediction_pct": plan.get("gap_prediction_pct"),
+        }
+        extra.update(_earnings_indicators(symbol, trading_date, calendar))
+        if row.get("earnings_result_today"):
+            extra["result_day"] = True
         rec = _build_recommendation(
             trading_date=trading_date,
             symbol=symbol,
@@ -150,12 +190,7 @@ def _persist_morning_plan(store: MongoAnalyticsStore, plan: dict, *, market_regi
             confidence_score=float(row.get("morning_score", 0)),
             reasoning="Morning refiner pick",
             market_regime=market_regime,
-            extra_indicators={
-                "morning_score": row.get("morning_score"),
-                "sentiment_7d": row.get("sentiment_7d"),
-                "in_evening_plan": row.get("in_evening_plan"),
-                "gap_prediction_pct": plan.get("gap_prediction_pct"),
-            },
+            extra_indicators=extra,
         )
         store.save_pipeline_pick(rec)
         count += 1
@@ -178,7 +213,7 @@ def persist_evening_picks(store: MongoAnalyticsStore, *, base_dir: str = ".") ->
             continue
         with open(path, encoding="utf-8") as f:
             plan = json.load(f)
-        count += _persist_evening_plan(store, plan, pick_source, screener, market_regime=regime)
+        count += _persist_evening_plan(store, plan, pick_source, screener, market_regime=regime, base_dir=base_dir)
     return count
 
 
@@ -191,7 +226,7 @@ def persist_morning_picks(store: MongoAnalyticsStore, *, base_dir: str = ".") ->
     with open(plan_file, encoding="utf-8") as f:
         plan = json.load(f)
     regime = _load_regime(base_dir)
-    return _persist_morning_plan(store, plan, market_regime=regime)
+    return _persist_morning_plan(store, plan, market_regime=regime, base_dir=base_dir)
 
 
 def backfill_picks_from_runs(store: MongoAnalyticsStore) -> int:
@@ -224,14 +259,14 @@ def backfill_picks_from_runs(store: MongoAnalyticsStore) -> int:
             with open(plan_path, encoding="utf-8") as f:
                 plan = json.load(f)
             total += _persist_evening_plan(
-                store, plan, pick_source, screener, market_regime=regime
+                store, plan, pick_source, screener, market_regime=regime, base_dir=base
             )
 
         morning_path = run_path / "morning_trade_plan.json"
         if morning_path.is_file():
             with open(morning_path, encoding="utf-8") as f:
                 plan = json.load(f)
-            total += _persist_morning_plan(store, plan, market_regime=regime)
+            total += _persist_morning_plan(store, plan, market_regime=regime, base_dir=base)
 
     if total:
         logger.info("Backfilled %d pipeline pick(s) from %s", total, runs_root)

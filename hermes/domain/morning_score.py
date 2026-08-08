@@ -13,6 +13,7 @@ def compute_morning_score(
     *,
     has_reg_risk: bool = False,
     market_regime: str = "UNKNOWN",
+    earnings_result_today: bool = False,
 ) -> float | None:
     """
     Return a 0–100 morning score, or None if the stock should be excluded.
@@ -42,6 +43,7 @@ def compute_morning_score(
         global_pts = -10.0
 
     regime_adj = -5.0 if "BEAR" in market_regime.upper() else 0.0
+    earnings_pts = 8.0 if earnings_result_today else 0.0
 
-    raw = screener_score * 0.60 + news_pts + global_pts + regime_adj
+    raw = screener_score * 0.60 + news_pts + global_pts + regime_adj + earnings_pts
     return round(max(0.0, min(100.0, raw)), 1)
