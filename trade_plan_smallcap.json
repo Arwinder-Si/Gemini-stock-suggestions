@@ -1,9 +1,8 @@
 {
-    "trading_date": "2026-08-08",
-    "generated_at": "2026-08-07 16:39:33 IST",
+    "trading_date": "2026-08-11",
+    "generated_at": "2026-08-10 16:59:03 IST",
     "universe": "small",
     "symbols": {
-        "COCHINSHIP": "21508",
-        "AWL": "8110"
+        "PAYTM": "6705"
     }
 }

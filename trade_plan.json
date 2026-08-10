@@ -1,12 +1,12 @@
 {
-    "trading_date": "2026-08-08",
-    "generated_at": "2026-08-07 16:39:28 IST",
+    "trading_date": "2026-08-11",
+    "generated_at": "2026-08-10 16:58:58 IST",
     "universe": "large",
     "symbols": {
         "GRASIM": "1232",
-        "DEEPAKNTR": "19943",
-        "CLEAN": "5049",
-        "RITES": "3761",
-        "INDIANB": "14309"
+        "GLAND": "1186",
+        "BOSCHLTD": "2181",
+        "KAYNES": "12092",
+        "DEEPAKNTR": "19943"
     }
 }
