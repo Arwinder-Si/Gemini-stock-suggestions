@@ -1,11 +1,83 @@
 {
-    "trading_date": "2026-08-07",
-    "generated_at": "2026-08-07 10:22:14 IST",
+    "trading_date": "2026-08-10",
+    "generated_at": "2026-08-10 09:57:14 IST",
     "source": "morning_refiner",
     "market_regime": "BULLISH",
-    "gap_prediction_pct": -0.571074243538289,
-    "gap_bias": "Strong Bearish Open (Gap Down < -0.5%)",
+    "gap_prediction_pct": 0.5533743535758693,
+    "gap_bias": "Strong Bullish Open (Gap Up > 0.5%)",
     "min_morning_score": 60.0,
-    "symbols": {},
-    "rankings": []
+    "earnings_result_today": [
+        "BHARATFORG",
+        "BOSCHLTD",
+        "GLAND"
+    ],
+    "symbols": {
+        "GRASIM": "1232",
+        "DEEPAKNTR": "19943",
+        "CLEAN": "5049",
+        "RITES": "3761",
+        "INDIANB": "14309"
+    },
+    "rankings": [
+        {
+            "symbol": "GRASIM",
+            "morning_score": 69.4,
+            "screener_score": 99,
+            "sentiment_7d": 0.0,
+            "sector": "Diversified",
+            "vol_ratio": 2.0,
+            "rsi": 65.0,
+            "security_id": "1232",
+            "in_evening_plan": true,
+            "earnings_result_today": false
+        },
+        {
+            "symbol": "DEEPAKNTR",
+            "morning_score": 67.0,
+            "screener_score": 95,
+            "sentiment_7d": 0.0,
+            "sector": "Chemicals",
+            "vol_ratio": 3.7,
+            "rsi": 67.0,
+            "security_id": "19943",
+            "in_evening_plan": true,
+            "earnings_result_today": false
+        },
+        {
+            "symbol": "CLEAN",
+            "morning_score": 65.2,
+            "screener_score": 92,
+            "sentiment_7d": 0.0,
+            "sector": "Chemicals",
+            "vol_ratio": 2.1,
+            "rsi": 62.0,
+            "security_id": "5049",
+            "in_evening_plan": true,
+            "earnings_result_today": false
+        },
+        {
+            "symbol": "RITES",
+            "morning_score": 64.6,
+            "screener_score": 91,
+            "sentiment_7d": 0.0,
+            "sector": "Infra",
+            "vol_ratio": 1.8,
+            "rsi": 64.0,
+            "security_id": "3761",
+            "in_evening_plan": true,
+            "earnings_result_today": false
+        },
+        {
+            "symbol": "INDIANB",
+            "morning_score": 64.0,
+            "screener_score": 90,
+            "sentiment_7d": 0.0,
+            "sector": "Banking",
+            "vol_ratio": 2.0,
+            "rsi": 67.0,
+            "security_id": "14309",
+            "in_evening_plan": true,
+            "earnings_result_today": false
+        }
+    ]
 }
