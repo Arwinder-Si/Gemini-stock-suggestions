@@ -1,12 +1,12 @@
 {
-    "trading_date": "2026-08-11",
-    "generated_at": "2026-08-10 16:58:58 IST",
+    "trading_date": "2026-08-12",
+    "generated_at": "2026-08-11 16:37:22 IST",
     "universe": "large",
     "symbols": {
-        "GRASIM": "1232",
-        "GLAND": "1186",
+        "POLICYBZR": "6656",
         "BOSCHLTD": "2181",
-        "KAYNES": "12092",
-        "DEEPAKNTR": "19943"
+        "GRASIM": "1232",
+        "HINDZINC": "1424",
+        "SIEMENS": "3150"
     }
 }
