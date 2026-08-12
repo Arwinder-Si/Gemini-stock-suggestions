@@ -1,46 +1,18 @@
 {
-    "trading_date": "2026-08-11",
-    "generated_at": "2026-08-11 09:47:12 IST",
+    "trading_date": "2026-08-12",
+    "generated_at": "2026-08-12 10:15:15 IST",
     "source": "morning_refiner",
     "market_regime": "BULLISH",
-    "gap_prediction_pct": 0.16493579388835977,
-    "gap_bias": "Mild Bullish Open",
+    "gap_prediction_pct": -0.34753878972005436,
+    "gap_bias": "Mild Bearish Open",
     "min_morning_score": 60.0,
     "earnings_result_today": [
-        "BATAINDIA",
-        "MANAPPURAM",
-        "MRF",
-        "PIIND",
-        "SIEMENS"
+        "ABBOTINDIA",
+        "FLUOROCHEM",
+        "GRASIM",
+        "HAL",
+        "IRCTC"
     ],
-    "symbols": {
-        "GRASIM": "1232",
-        "GLAND": "1186"
-    },
-    "rankings": [
-        {
-            "symbol": "GRASIM",
-            "morning_score": 65.0,
-            "screener_score": 100,
-            "sentiment_7d": 0.0,
-            "sector": "Diversified",
-            "vol_ratio": 4.1,
-            "rsi": 68.0,
-            "security_id": "1232",
-            "in_evening_plan": true,
-            "earnings_result_today": false
-        },
-        {
-            "symbol": "GLAND",
-            "morning_score": 60.2,
-            "screener_score": 92,
-            "sentiment_7d": 0.0,
-            "sector": "Pharma",
-            "vol_ratio": 1.6,
-            "rsi": 68.0,
-            "security_id": "1186",
-            "in_evening_plan": true,
-            "earnings_result_today": false
-        }
-    ]
+    "symbols": {},
+    "rankings": []
 }
