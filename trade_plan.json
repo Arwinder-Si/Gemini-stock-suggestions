@@ -1,12 +1,12 @@
 {
-    "trading_date": "2026-08-12",
-    "generated_at": "2026-08-11 16:37:22 IST",
+    "trading_date": "2026-08-13",
+    "generated_at": "2026-08-12 16:43:12 IST",
     "universe": "large",
     "symbols": {
-        "POLICYBZR": "6656",
-        "BOSCHLTD": "2181",
+        "AARTIIND": "7",
         "GRASIM": "1232",
-        "HINDZINC": "1424",
-        "SIEMENS": "3150"
+        "HAL": "2303",
+        "HINDALCO": "1363",
+        "FLUOROCHEM": "13750"
     }
 }
