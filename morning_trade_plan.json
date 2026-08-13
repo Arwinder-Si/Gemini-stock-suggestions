@@ -1,18 +1,84 @@
 {
-    "trading_date": "2026-08-12",
-    "generated_at": "2026-08-12 10:15:15 IST",
+    "trading_date": "2026-08-13",
+    "generated_at": "2026-08-13 10:19:12 IST",
     "source": "morning_refiner",
     "market_regime": "BULLISH",
-    "gap_prediction_pct": -0.34753878972005436,
-    "gap_bias": "Mild Bearish Open",
+    "gap_prediction_pct": 0.5029859334972913,
+    "gap_bias": "Strong Bullish Open (Gap Up > 0.5%)",
     "min_morning_score": 60.0,
     "earnings_result_today": [
-        "ABBOTINDIA",
-        "FLUOROCHEM",
-        "GRASIM",
-        "HAL",
-        "IRCTC"
+        "CESC",
+        "IPCALAB",
+        "JUBLFOOD",
+        "PAGEIND"
     ],
-    "symbols": {},
-    "rankings": []
+    "symbols": {
+        "AARTIIND": "7",
+        "GRASIM": "1232",
+        "HAL": "2303",
+        "HINDALCO": "1363",
+        "FLUOROCHEM": "13750"
+    },
+    "rankings": [
+        {
+            "symbol": "AARTIIND",
+            "morning_score": 70.0,
+            "screener_score": 100,
+            "sentiment_7d": 0.0,
+            "sector": "Chemicals",
+            "vol_ratio": 3.5,
+            "rsi": 70.0,
+            "security_id": "7",
+            "in_evening_plan": true,
+            "earnings_result_today": false
+        },
+        {
+            "symbol": "GRASIM",
+            "morning_score": 68.8,
+            "screener_score": 98,
+            "sentiment_7d": 0.0,
+            "sector": "Diversified",
+            "vol_ratio": 3.4,
+            "rsi": 61.0,
+            "security_id": "1232",
+            "in_evening_plan": true,
+            "earnings_result_today": false
+        },
+        {
+            "symbol": "HAL",
+            "morning_score": 65.2,
+            "screener_score": 92,
+            "sentiment_7d": 0.0,
+            "sector": "Defence",
+            "vol_ratio": 3.0,
+            "rsi": 77.0,
+            "security_id": "2303",
+            "in_evening_plan": true,
+            "earnings_result_today": false
+        },
+        {
+            "symbol": "HINDALCO",
+            "morning_score": 64.6,
+            "screener_score": 91,
+            "sentiment_7d": 0.0,
+            "sector": "Metals",
+            "vol_ratio": 1.6,
+            "rsi": 70.0,
+            "security_id": "1363",
+            "in_evening_plan": true,
+            "earnings_result_today": false
+        },
+        {
+            "symbol": "FLUOROCHEM",
+            "morning_score": 64.0,
+            "screener_score": 90,
+            "sentiment_7d": 0.0,
+            "sector": "Chemicals",
+            "vol_ratio": 4.8,
+            "rsi": 61.0,
+            "security_id": "13750",
+            "in_evening_plan": true,
+            "earnings_result_today": false
+        }
+    ]
 }
