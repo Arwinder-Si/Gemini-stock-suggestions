@@ -1,12 +1,12 @@
 {
-    "trading_date": "2026-08-14",
-    "generated_at": "2026-08-13 16:43:47 IST",
+    "trading_date": "2026-08-15",
+    "generated_at": "2026-08-14 16:40:49 IST",
     "universe": "large",
     "symbols": {
-        "FLUOROCHEM": "13750",
-        "AJANTPHARM": "8124",
+        "BATAINDIA": "371",
         "BDL": "2144",
-        "IPCALAB": "1633",
-        "CLEAN": "5049"
+        "HAPPSTMNDS": "48",
+        "MAZDOCK": "509",
+        "FLUOROCHEM": "13750"
     }
 }
