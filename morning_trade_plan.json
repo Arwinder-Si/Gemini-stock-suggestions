@@ -1,18 +1,12 @@
 {
-    "trading_date": "2026-08-14",
-    "generated_at": "2026-08-14 10:16:11 IST",
+    "trading_date": "2026-08-17",
+    "generated_at": "2026-08-17 09:16:33 IST",
     "source": "morning_refiner",
     "market_regime": "NEUTRAL-BEAR",
-    "gap_prediction_pct": 0.709682628526183,
-    "gap_bias": "Strong Bullish Open (Gap Up > 0.5%)",
+    "gap_prediction_pct": -0.015531871381886608,
+    "gap_bias": "Flat / Neutral Open",
     "min_morning_score": 60.0,
-    "earnings_result_today": [
-        "ALKEM",
-        "ASHOKLEY",
-        "BDL",
-        "NATCOPHARM",
-        "VOLTAS"
-    ],
+    "earnings_result_today": [],
     "symbols": {},
     "rankings": []
 }
