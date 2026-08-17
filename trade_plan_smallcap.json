@@ -1,6 +1,8 @@
 {
-    "trading_date": "2026-08-15",
-    "generated_at": "2026-08-14 16:40:54 IST",
+    "trading_date": "2026-08-18",
+    "generated_at": "2026-08-17 16:21:06 IST",
     "universe": "small",
-    "symbols": {}
+    "symbols": {
+        "MOTILALOFS": "14947"
+    }
 }

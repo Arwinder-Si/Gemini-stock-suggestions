@@ -1,12 +1,11 @@
 {
-    "trading_date": "2026-08-15",
-    "generated_at": "2026-08-14 16:40:49 IST",
+    "trading_date": "2026-08-18",
+    "generated_at": "2026-08-17 16:21:01 IST",
     "universe": "large",
     "symbols": {
+        "IPCALAB": "1633",
         "BATAINDIA": "371",
         "BDL": "2144",
-        "HAPPSTMNDS": "48",
-        "MAZDOCK": "509",
-        "FLUOROCHEM": "13750"
+        "HAPPSTMNDS": "48"
     }
 }
