@@ -1,11 +1,9 @@
 {
-    "trading_date": "2026-08-18",
-    "generated_at": "2026-08-17 16:21:01 IST",
+    "trading_date": "2026-08-19",
+    "generated_at": "2026-08-18 16:19:50 IST",
     "universe": "large",
     "symbols": {
-        "IPCALAB": "1633",
-        "BATAINDIA": "371",
-        "BDL": "2144",
-        "HAPPSTMNDS": "48"
+        "MAZDOCK": "509",
+        "GRSE": "5475"
     }
 }
