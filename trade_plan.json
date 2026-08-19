@@ -1,9 +1,8 @@
 {
-    "trading_date": "2026-08-19",
-    "generated_at": "2026-08-18 16:19:50 IST",
+    "trading_date": "2026-08-20",
+    "generated_at": "2026-08-19 16:19:03 IST",
     "universe": "large",
     "symbols": {
-        "MAZDOCK": "509",
-        "GRSE": "5475"
+        "POLICYBZR": "6656"
     }
 }
