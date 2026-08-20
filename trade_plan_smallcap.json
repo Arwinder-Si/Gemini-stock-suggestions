@@ -1,6 +1,9 @@
 {
-    "trading_date": "2026-08-20",
-    "generated_at": "2026-08-19 16:19:07 IST",
+    "trading_date": "2026-08-21",
+    "generated_at": "2026-08-20 16:20:37 IST",
     "universe": "small",
-    "symbols": {}
+    "symbols": {
+        "NAM-INDIA": "357",
+        "PERSISTENT": "18365"
+    }
 }
