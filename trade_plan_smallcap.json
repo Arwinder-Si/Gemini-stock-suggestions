@@ -1,9 +1,9 @@
 {
-    "trading_date": "2026-08-21",
-    "generated_at": "2026-08-20 16:20:37 IST",
+    "trading_date": "2026-08-22",
+    "generated_at": "2026-08-21 16:20:49 IST",
     "universe": "small",
     "symbols": {
-        "NAM-INDIA": "357",
-        "PERSISTENT": "18365"
+        "CDSL": "21174",
+        "MOTILALOFS": "14947"
     }
 }
