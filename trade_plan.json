@@ -1,10 +1,12 @@
 {
-    "trading_date": "2026-08-22",
-    "generated_at": "2026-08-21 16:20:44 IST",
+    "trading_date": "2026-08-25",
+    "generated_at": "2026-08-24 16:26:53 IST",
     "universe": "large",
     "symbols": {
-        "KOTAKBANK": "1922",
-        "DIXON": "21690",
-        "AUBANK": "21238"
+        "HINDZINC": "1424",
+        "GLENMARK": "7406",
+        "DLF": "14732",
+        "JINDALSTEL": "6733",
+        "JSWSTEEL": "11723"
     }
 }

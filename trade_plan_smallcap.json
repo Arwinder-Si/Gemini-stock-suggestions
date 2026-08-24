@@ -1,9 +1,6 @@
 {
-    "trading_date": "2026-08-22",
-    "generated_at": "2026-08-21 16:20:49 IST",
+    "trading_date": "2026-08-25",
+    "generated_at": "2026-08-24 16:26:59 IST",
     "universe": "small",
-    "symbols": {
-        "CDSL": "21174",
-        "MOTILALOFS": "14947"
-    }
+    "symbols": {}
 }
