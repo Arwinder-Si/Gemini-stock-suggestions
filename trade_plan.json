@@ -1,12 +1,12 @@
 {
-    "trading_date": "2026-08-25",
-    "generated_at": "2026-08-24 16:26:53 IST",
+    "trading_date": "2026-08-26",
+    "generated_at": "2026-08-25 16:22:36 IST",
     "universe": "large",
     "symbols": {
-        "HINDZINC": "1424",
+        "AUBANK": "21238",
         "GLENMARK": "7406",
-        "DLF": "14732",
-        "JINDALSTEL": "6733",
-        "JSWSTEEL": "11723"
+        "MAZDOCK": "509",
+        "ADANIENT": "25",
+        "DIXON": "21690"
     }
 }

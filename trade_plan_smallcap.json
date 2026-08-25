@@ -1,6 +1,8 @@
 {
-    "trading_date": "2026-08-25",
-    "generated_at": "2026-08-24 16:26:59 IST",
+    "trading_date": "2026-08-26",
+    "generated_at": "2026-08-25 16:22:41 IST",
     "universe": "small",
-    "symbols": {}
+    "symbols": {
+        "AWL": "8110"
+    }
 }
