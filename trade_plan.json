@@ -1,12 +1,11 @@
 {
-    "trading_date": "2026-08-27",
-    "generated_at": "2026-08-26 16:24:15 IST",
+    "trading_date": "2026-08-28",
+    "generated_at": "2026-08-28 02:04:04 IST",
     "universe": "large",
     "symbols": {
         "ADANIENT": "25",
-        "HINDZINC": "1424",
-        "COCHINSHIP": "21508",
-        "MAZDOCK": "509",
-        "JSWSTEEL": "11723"
+        "JSWSTEEL": "11723",
+        "JINDALSTEL": "6733",
+        "HAPPSTMNDS": "48"
     }
 }
