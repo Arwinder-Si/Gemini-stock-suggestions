@@ -1,11 +1,8 @@
 {
-    "trading_date": "2026-08-28",
-    "generated_at": "2026-08-28 02:04:04 IST",
+    "trading_date": "2026-08-29",
+    "generated_at": "2026-08-29 02:42:51 IST",
     "universe": "large",
     "symbols": {
-        "ADANIENT": "25",
-        "JSWSTEEL": "11723",
-        "JINDALSTEL": "6733",
-        "HAPPSTMNDS": "48"
+        "GLENMARK": "7406"
     }
 }
