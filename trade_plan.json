@@ -1,11 +1,6 @@
 {
-    "trading_date": "2026-09-01",
-    "generated_at": "2026-08-31 23:10:11 IST",
+    "trading_date": "2026-09-02",
+    "generated_at": "2026-09-01 20:27:20 IST",
     "universe": "large",
-    "symbols": {
-        "AUROPHARMA": "275",
-        "LAURUSLABS": "19234",
-        "BAJAJ-AUTO": "16669",
-        "LTTS": "18564"
-    }
+    "symbols": {}
 }
