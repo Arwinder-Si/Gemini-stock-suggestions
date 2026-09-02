@@ -1,6 +1,9 @@
 {
-    "trading_date": "2026-09-02",
-    "generated_at": "2026-09-01 20:27:20 IST",
+    "trading_date": "2026-09-03",
+    "generated_at": "2026-09-02 20:02:58 IST",
     "universe": "large",
-    "symbols": {}
+    "symbols": {
+        "COALINDIA": "20374",
+        "CLEAN": "5049"
+    }
 }
