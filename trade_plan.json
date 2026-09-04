@@ -1,10 +1,8 @@
 {
-    "trading_date": "2026-09-04",
-    "generated_at": "2026-09-03 20:08:03 IST",
+    "trading_date": "2026-09-05",
+    "generated_at": "2026-09-04 19:55:27 IST",
     "universe": "large",
     "symbols": {
-        "IDFCFIRSTB": "11184",
-        "COALINDIA": "20374",
-        "JSL": "11236"
+        "GLAND": "1186"
     }
 }
