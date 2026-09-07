@@ -1,8 +1,6 @@
 {
-    "trading_date": "2026-09-05",
-    "generated_at": "2026-09-04 19:55:27 IST",
+    "trading_date": "2026-09-08",
+    "generated_at": "2026-09-07 21:24:32 IST",
     "universe": "large",
-    "symbols": {
-        "GLAND": "1186"
-    }
+    "symbols": {}
 }
