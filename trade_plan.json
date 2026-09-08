@@ -1,6 +1,8 @@
 {
-    "trading_date": "2026-09-08",
-    "generated_at": "2026-09-07 21:24:32 IST",
+    "trading_date": "2026-09-09",
+    "generated_at": "2026-09-08 20:06:08 IST",
     "universe": "large",
-    "symbols": {}
+    "symbols": {
+        "HAL": "2303"
+    }
 }
