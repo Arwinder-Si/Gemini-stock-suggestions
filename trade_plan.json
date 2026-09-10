@@ -1,11 +1,9 @@
 {
-    "trading_date": "2026-09-10",
-    "generated_at": "2026-09-09 20:09:40 IST",
+    "trading_date": "2026-09-11",
+    "generated_at": "2026-09-10 20:00:13 IST",
     "universe": "large",
     "symbols": {
-        "ADANIPORTS": "15083",
-        "PAYTM": "6705",
-        "CGPOWER": "760",
-        "JSL": "11236"
+        "SJVN": "18883",
+        "CLEAN": "5049"
     }
 }
