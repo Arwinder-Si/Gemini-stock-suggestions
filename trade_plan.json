@@ -1,9 +1,10 @@
 {
-    "trading_date": "2026-09-11",
-    "generated_at": "2026-09-10 20:00:13 IST",
+    "trading_date": "2026-09-12",
+    "generated_at": "2026-09-11 19:59:25 IST",
     "universe": "large",
     "symbols": {
-        "SJVN": "18883",
-        "CLEAN": "5049"
+        "BANDHANBNK": "2263",
+        "BLUESTARCO": "8311",
+        "LICHSGFIN": "1997"
     }
 }
