@@ -1,10 +1,6 @@
 {
-    "trading_date": "2026-09-15",
-    "generated_at": "2026-09-14 21:55:15 IST",
+    "trading_date": "2026-09-16",
+    "generated_at": "2026-09-15 20:34:09 IST",
     "universe": "large",
-    "symbols": {
-        "BANDHANBNK": "2263",
-        "BLUESTARCO": "8311",
-        "LICHSGFIN": "1997"
-    }
+    "symbols": {}
 }
