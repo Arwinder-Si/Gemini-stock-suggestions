@@ -1,6 +1,8 @@
 {
-    "trading_date": "2026-09-16",
-    "generated_at": "2026-09-15 20:34:09 IST",
+    "trading_date": "2026-09-17",
+    "generated_at": "2026-09-16 20:31:47 IST",
     "universe": "large",
-    "symbols": {}
+    "symbols": {
+        "PAYTM": "6705"
+    }
 }
