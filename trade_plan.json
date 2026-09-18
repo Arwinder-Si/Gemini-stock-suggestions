@@ -1,8 +1,12 @@
 {
-    "trading_date": "2026-09-18",
-    "generated_at": "2026-09-17 20:33:38 IST",
+    "trading_date": "2026-09-19",
+    "generated_at": "2026-09-18 20:04:08 IST",
     "universe": "large",
     "symbols": {
-        "HDFCLIFE": "467"
+        "ABBOTINDIA": "17903",
+        "AUROPHARMA": "275",
+        "IPCALAB": "1633",
+        "ADANIPORTS": "15083",
+        "ALKEM": "11703"
     }
 }
