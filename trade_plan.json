@@ -1,12 +1,8 @@
 {
-    "trading_date": "2026-09-19",
-    "generated_at": "2026-09-18 20:04:08 IST",
+    "trading_date": "2026-09-22",
+    "generated_at": "2026-09-21 22:00:46 IST",
     "universe": "large",
     "symbols": {
-        "ABBOTINDIA": "17903",
-        "AUROPHARMA": "275",
-        "IPCALAB": "1633",
-        "ADANIPORTS": "15083",
-        "ALKEM": "11703"
+        "MANKIND": "15380"
     }
 }
