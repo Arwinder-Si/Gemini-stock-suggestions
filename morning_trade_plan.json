@@ -1,9 +1,9 @@
 {
-    "trading_date": "2026-09-22",
-    "generated_at": "2026-09-22 13:43:20 IST",
+    "trading_date": "2026-09-23",
+    "generated_at": "2026-09-23 13:45:32 IST",
     "source": "morning_refiner",
     "market_regime": "BEARISH",
-    "gap_prediction_pct": 0.7543736717527105,
+    "gap_prediction_pct": 1.450308493376816,
     "gap_bias": "Strong Bullish Open (Gap Up > 0.5%)",
     "min_morning_score": 60.0,
     "earnings_result_today": [],
