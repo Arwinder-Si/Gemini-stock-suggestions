@@ -1,9 +1,10 @@
 {
-    "trading_date": "2026-09-23",
-    "generated_at": "2026-09-22 20:28:25 IST",
+    "trading_date": "2026-09-24",
+    "generated_at": "2026-09-23 20:34:14 IST",
     "universe": "large",
     "symbols": {
-        "BANDHANBNK": "2263",
-        "DRREDDY": "881"
+        "POLICYBZR": "6656",
+        "IDFCFIRSTB": "11184",
+        "SONACOMS": "4684"
     }
 }
