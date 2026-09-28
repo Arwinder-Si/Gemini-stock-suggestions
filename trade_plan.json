@@ -1,6 +1,9 @@
 {
-    "trading_date": "2026-09-26",
-    "generated_at": "2026-09-25 20:50:05 IST",
+    "trading_date": "2026-09-29",
+    "generated_at": "2026-09-28 23:42:38 IST",
     "universe": "large",
-    "symbols": {}
+    "symbols": {
+        "DRREDDY": "881",
+        "BLUESTARCO": "8311"
+    }
 }
