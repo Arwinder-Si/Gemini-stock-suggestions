@@ -1,9 +1,10 @@
 {
-    "trading_date": "2026-09-29",
-    "generated_at": "2026-09-28 23:42:38 IST",
+    "trading_date": "2026-09-30",
+    "generated_at": "2026-09-29 22:03:45 IST",
     "universe": "large",
     "symbols": {
-        "DRREDDY": "881",
-        "BLUESTARCO": "8311"
+        "MANKIND": "15380",
+        "ADANIPORTS": "15083",
+        "ABBOTINDIA": "17903"
     }
 }
