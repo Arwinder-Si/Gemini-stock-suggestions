@@ -1,6 +1,8 @@
 {
-    "trading_date": "2026-09-30",
-    "generated_at": "2026-09-29 22:03:49 IST",
+    "trading_date": "2026-10-01",
+    "generated_at": "2026-09-30 21:57:18 IST",
     "universe": "small",
-    "symbols": {}
+    "symbols": {
+        "ITDC": "19299"
+    }
 }
