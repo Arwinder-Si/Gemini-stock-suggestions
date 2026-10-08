@@ -1,8 +1,6 @@
 {
-    "trading_date": "2026-10-08",
-    "generated_at": "2026-10-07 22:59:00 IST",
+    "trading_date": "2026-10-09",
+    "generated_at": "2026-10-08 22:57:02 IST",
     "universe": "small",
-    "symbols": {
-        "ADANIGREEN": "3563"
-    }
+    "symbols": {}
 }
