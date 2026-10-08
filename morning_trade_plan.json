@@ -1,12 +1,14 @@
 {
-    "trading_date": "2026-10-07",
-    "generated_at": "2026-10-07 15:14:47 IST",
+    "trading_date": "2026-10-08",
+    "generated_at": "2026-10-08 15:25:34 IST",
     "source": "morning_refiner",
     "market_regime": "BEARISH",
-    "gap_prediction_pct": -0.18491954048255033,
-    "gap_bias": "Mild Bearish Open",
+    "gap_prediction_pct": -1.3769155444012178,
+    "gap_bias": "Strong Bearish Open (Gap Down < -0.5%)",
     "min_morning_score": 60.0,
-    "earnings_result_today": [],
+    "earnings_result_today": [
+        "TCS"
+    ],
     "symbols": {},
     "rankings": []
 }
