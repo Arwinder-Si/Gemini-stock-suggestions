@@ -1,12 +1,14 @@
 {
-    "trading_date": "2026-10-09",
-    "generated_at": "2026-10-09 15:29:26 IST",
+    "trading_date": "2026-10-12",
+    "generated_at": "2026-10-12 15:40:56 IST",
     "source": "morning_refiner",
     "market_regime": "BEARISH",
-    "gap_prediction_pct": 0.4101309979302581,
-    "gap_bias": "Mild Bullish Open",
+    "gap_prediction_pct": 0.06756860918928975,
+    "gap_bias": "Flat / Neutral Open",
     "min_morning_score": 60.0,
-    "earnings_result_today": [],
+    "earnings_result_today": [
+        "HCLTECH"
+    ],
     "symbols": {},
     "rankings": []
 }
