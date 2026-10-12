@@ -1,9 +1,6 @@
 {
-    "trading_date": "2026-10-10",
-    "generated_at": "2026-10-09 22:33:06 IST",
+    "trading_date": "2026-10-13",
+    "generated_at": "2026-10-13 01:21:09 IST",
     "universe": "large",
-    "symbols": {
-        "KOTAKBANK": "1922",
-        "PERSISTENT": "18365"
-    }
+    "symbols": {}
 }
