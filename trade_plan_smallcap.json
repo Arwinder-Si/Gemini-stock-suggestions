@@ -1,6 +1,8 @@
 {
-    "trading_date": "2026-10-13",
-    "generated_at": "2026-10-13 01:21:13 IST",
+    "trading_date": "2026-10-14",
+    "generated_at": "2026-10-13 23:09:16 IST",
     "universe": "small",
-    "symbols": {}
+    "symbols": {
+        "KARURVYSYA": "1838"
+    }
 }

@@ -1,6 +1,11 @@
 {
-    "trading_date": "2026-10-13",
-    "generated_at": "2026-10-13 01:21:09 IST",
+    "trading_date": "2026-10-14",
+    "generated_at": "2026-10-13 23:09:10 IST",
     "universe": "large",
-    "symbols": {}
+    "symbols": {
+        "HCLTECH": "7229",
+        "PERSISTENT": "18365",
+        "COFORGE": "11543",
+        "TANLA": "13976"
+    }
 }
