@@ -1,13 +1,14 @@
 {
-    "trading_date": "2026-10-12",
-    "generated_at": "2026-10-12 15:40:56 IST",
+    "trading_date": "2026-10-13",
+    "generated_at": "2026-10-13 15:34:07 IST",
     "source": "morning_refiner",
     "market_regime": "BEARISH",
-    "gap_prediction_pct": 0.06756860918928975,
+    "gap_prediction_pct": 0.035833679758873194,
     "gap_bias": "Flat / Neutral Open",
     "min_morning_score": 60.0,
     "earnings_result_today": [
-        "HCLTECH"
+        "ICICIPRULI",
+        "TATAELXSI"
     ],
     "symbols": {},
     "rankings": []
