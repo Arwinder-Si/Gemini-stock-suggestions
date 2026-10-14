@@ -1,11 +1,10 @@
 {
-    "trading_date": "2026-10-14",
-    "generated_at": "2026-10-13 23:09:10 IST",
+    "trading_date": "2026-10-15",
+    "generated_at": "2026-10-14 20:43:21 IST",
     "universe": "large",
     "symbols": {
-        "HCLTECH": "7229",
-        "PERSISTENT": "18365",
-        "COFORGE": "11543",
-        "TANLA": "13976"
+        "PNB": "10666",
+        "FLUOROCHEM": "13750",
+        "TATAELXSI": "3411"
     }
 }
