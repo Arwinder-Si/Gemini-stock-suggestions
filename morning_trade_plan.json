@@ -1,15 +1,12 @@
 {
-    "trading_date": "2026-10-13",
-    "generated_at": "2026-10-13 15:34:07 IST",
+    "trading_date": "2026-10-14",
+    "generated_at": "2026-10-14 13:51:35 IST",
     "source": "morning_refiner",
     "market_regime": "BEARISH",
-    "gap_prediction_pct": 0.035833679758873194,
+    "gap_prediction_pct": 0.05208244239221993,
     "gap_bias": "Flat / Neutral Open",
     "min_morning_score": 60.0,
-    "earnings_result_today": [
-        "ICICIPRULI",
-        "TATAELXSI"
-    ],
+    "earnings_result_today": [],
     "symbols": {},
     "rankings": []
 }
