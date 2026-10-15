@@ -1,12 +1,21 @@
 {
-    "trading_date": "2026-10-14",
-    "generated_at": "2026-10-14 13:51:35 IST",
+    "trading_date": "2026-10-15",
+    "generated_at": "2026-10-15 13:28:32 IST",
     "source": "morning_refiner",
     "market_regime": "BEARISH",
-    "gap_prediction_pct": 0.05208244239221993,
-    "gap_bias": "Flat / Neutral Open",
+    "gap_prediction_pct": -1.0915142858892772,
+    "gap_bias": "Strong Bearish Open (Gap Down < -0.5%)",
     "min_morning_score": 60.0,
-    "earnings_result_today": [],
+    "earnings_result_today": [
+        "HDFCLIFE",
+        "INDIANB",
+        "IRFC",
+        "NESTLEIND",
+        "PERSISTENT",
+        "POLYCAB",
+        "TECHM",
+        "WIPRO"
+    ],
     "symbols": {},
     "rankings": []
 }
