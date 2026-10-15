@@ -1,10 +1,11 @@
 {
-    "trading_date": "2026-10-15",
-    "generated_at": "2026-10-14 20:43:21 IST",
+    "trading_date": "2026-10-16",
+    "generated_at": "2026-10-15 20:35:22 IST",
     "universe": "large",
     "symbols": {
-        "PNB": "10666",
-        "FLUOROCHEM": "13750",
-        "TATAELXSI": "3411"
+        "TECHM": "13538",
+        "HAPPSTMNDS": "48",
+        "KOTAKBANK": "1922",
+        "PERSISTENT": "18365"
     }
 }
