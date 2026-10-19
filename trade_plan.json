@@ -1,9 +1,9 @@
 {
-    "trading_date": "2026-10-17",
-    "generated_at": "2026-10-16 20:24:09 IST",
+    "trading_date": "2026-10-20",
+    "generated_at": "2026-10-19 22:31:16 IST",
     "universe": "large",
     "symbols": {
-        "BHARTIARTL": "10604",
-        "MPHASIS": "4503"
+        "PNB": "10666",
+        "FEDERALBNK": "1023"
     }
 }
