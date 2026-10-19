@@ -1,14 +1,16 @@
 {
-    "trading_date": "2026-10-16",
-    "generated_at": "2026-10-16 13:22:31 IST",
+    "trading_date": "2026-10-19",
+    "generated_at": "2026-10-19 13:57:19 IST",
     "source": "morning_refiner",
     "market_regime": "BEARISH",
-    "gap_prediction_pct": 1.235392065998759,
-    "gap_bias": "Strong Bullish Open (Gap Up > 0.5%)",
+    "gap_prediction_pct": -0.06916312817492187,
+    "gap_bias": "Flat / Neutral Open",
     "min_morning_score": 60.0,
     "earnings_result_today": [
-        "FEDERALBNK",
-        "PNB"
+        "BAJFINANCE",
+        "HINDZINC",
+        "LTTS",
+        "ULTRACEMCO"
     ],
     "symbols": {},
     "rankings": []
