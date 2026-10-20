@@ -1,17 +1,12 @@
 {
-    "trading_date": "2026-10-19",
-    "generated_at": "2026-10-19 13:57:19 IST",
+    "trading_date": "2026-10-20",
+    "generated_at": "2026-10-20 13:39:53 IST",
     "source": "morning_refiner",
     "market_regime": "BEARISH",
-    "gap_prediction_pct": -0.06916312817492187,
-    "gap_bias": "Flat / Neutral Open",
+    "gap_prediction_pct": -0.5489972696725427,
+    "gap_bias": "Strong Bearish Open (Gap Down < -0.5%)",
     "min_morning_score": 60.0,
-    "earnings_result_today": [
-        "BAJFINANCE",
-        "HINDZINC",
-        "LTTS",
-        "ULTRACEMCO"
-    ],
+    "earnings_result_today": [],
     "symbols": {},
     "rankings": []
 }
