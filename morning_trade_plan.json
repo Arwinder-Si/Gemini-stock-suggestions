@@ -1,12 +1,16 @@
 {
-    "trading_date": "2026-10-20",
-    "generated_at": "2026-10-20 13:39:53 IST",
+    "trading_date": "2026-10-21",
+    "generated_at": "2026-10-21 13:45:02 IST",
     "source": "morning_refiner",
     "market_regime": "BEARISH",
-    "gap_prediction_pct": -0.5489972696725427,
-    "gap_bias": "Strong Bearish Open (Gap Down < -0.5%)",
+    "gap_prediction_pct": -0.012834188209452035,
+    "gap_bias": "Flat / Neutral Open",
     "min_morning_score": 60.0,
-    "earnings_result_today": [],
+    "earnings_result_today": [
+        "ADANIGREEN",
+        "KEI",
+        "SRF"
+    ],
     "symbols": {},
     "rankings": []
 }
