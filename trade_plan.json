@@ -1,9 +1,8 @@
 {
-    "trading_date": "2026-10-21",
-    "generated_at": "2026-10-20 20:39:19 IST",
+    "trading_date": "2026-10-22",
+    "generated_at": "2026-10-21 20:49:20 IST",
     "universe": "large",
     "symbols": {
-        "PNB": "10666",
-        "FEDERALBNK": "1023"
+        "PNB": "10666"
     }
 }
