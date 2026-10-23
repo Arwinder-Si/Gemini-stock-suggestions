@@ -1,14 +1,22 @@
 {
-    "trading_date": "2026-10-22",
-    "generated_at": "2026-10-22 13:46:47 IST",
+    "trading_date": "2026-10-23",
+    "generated_at": "2026-10-23 13:43:49 IST",
     "source": "morning_refiner",
     "market_regime": "BEARISH",
-    "gap_prediction_pct": -1.398395612256919,
-    "gap_bias": "Strong Bearish Open (Gap Down < -0.5%)",
+    "gap_prediction_pct": 0.626422520233946,
+    "gap_bias": "Strong Bullish Open (Gap Up > 0.5%)",
     "min_morning_score": 60.0,
     "earnings_result_today": [
-        "COLPAL",
-        "HAVELLS"
+        "ADANIPOWER",
+        "BPCL",
+        "CGPOWER",
+        "COFORGE",
+        "DRREDDY",
+        "INFY",
+        "JINDALSTEL",
+        "JSWSTEEL",
+        "SHREECEM",
+        "TORNTPHARM"
     ],
     "symbols": {},
     "rankings": []
