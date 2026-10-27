@@ -1,16 +1,18 @@
 {
-    "trading_date": "2026-10-26",
-    "generated_at": "2026-10-26 13:59:15 IST",
+    "trading_date": "2026-10-27",
+    "generated_at": "2026-10-27 14:06:40 IST",
     "source": "morning_refiner",
     "market_regime": "BEARISH",
-    "gap_prediction_pct": 0.6525815867383093,
+    "gap_prediction_pct": 1.1189922022901169,
     "gap_bias": "Strong Bullish Open (Gap Up > 0.5%)",
     "min_morning_score": 60.0,
     "earnings_result_today": [
-        "PAYTM",
-        "RECLTD",
-        "SONACOMS",
-        "TATACONSUM"
+        "BAJAJ-AUTO",
+        "CIPLA",
+        "LT",
+        "MARUTI",
+        "SBILIFE",
+        "TANLA"
     ],
     "symbols": {},
     "rankings": []
