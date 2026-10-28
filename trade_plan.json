@@ -1,10 +1,8 @@
 {
-    "trading_date": "2026-10-28",
-    "generated_at": "2026-10-27 21:25:59 IST",
+    "trading_date": "2026-10-29",
+    "generated_at": "2026-10-28 22:11:17 IST",
     "universe": "large",
     "symbols": {
-        "BATAINDIA": "371",
-        "BHARTIARTL": "10604",
-        "SONACOMS": "4684"
+        "TANLA": "13976"
     }
 }
