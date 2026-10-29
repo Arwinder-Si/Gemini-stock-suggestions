@@ -1,19 +1,21 @@
 {
-    "trading_date": "2026-10-28",
-    "generated_at": "2026-10-28 14:46:58 IST",
+    "trading_date": "2026-10-29",
+    "generated_at": "2026-10-29 14:47:29 IST",
     "source": "morning_refiner",
     "market_regime": "BEARISH",
-    "gap_prediction_pct": 0.8904220591784051,
+    "gap_prediction_pct": 0.9753458401980559,
     "gap_bias": "Strong Bullish Open (Gap Up > 0.5%)",
     "min_morning_score": 60.0,
     "earnings_result_today": [
-        "ADANIENT",
-        "ADANIPORTS",
-        "BANDHANBNK",
-        "CHOLAFIN",
-        "HINDUNILVR",
-        "PIDILITIND",
-        "TVSMOTOR"
+        "AMBUJACEM",
+        "ASIANPAINT",
+        "BLUESTARCO",
+        "COALINDIA",
+        "DEEPAKNTR",
+        "GODREJCP",
+        "INDIGO",
+        "LAURUSLABS",
+        "TRENT"
     ],
     "symbols": {},
     "rankings": []
