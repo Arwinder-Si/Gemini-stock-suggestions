@@ -1,8 +1,9 @@
 {
-    "trading_date": "2026-10-29",
-    "generated_at": "2026-10-28 22:11:17 IST",
+    "trading_date": "2026-10-30",
+    "generated_at": "2026-10-29 22:28:46 IST",
     "universe": "large",
     "symbols": {
-        "TANLA": "13976"
+        "ADANIPORTS": "15083",
+        "TVSMOTOR": "8479"
     }
 }
