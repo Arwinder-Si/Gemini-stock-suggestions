@@ -1,9 +1,9 @@
 {
-    "trading_date": "2026-10-30",
-    "generated_at": "2026-10-29 22:28:46 IST",
+    "trading_date": "2026-10-31",
+    "generated_at": "2026-10-30 22:14:45 IST",
     "universe": "large",
     "symbols": {
-        "ADANIPORTS": "15083",
-        "TVSMOTOR": "8479"
+        "DIVISLAB": "10940",
+        "COFORGE": "11543"
     }
 }
