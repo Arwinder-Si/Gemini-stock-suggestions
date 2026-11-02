@@ -1,25 +1,15 @@
 {
-    "trading_date": "2026-10-30",
-    "generated_at": "2026-10-30 15:04:13 IST",
+    "trading_date": "2026-11-02",
+    "generated_at": "2026-11-02 16:00:15 IST",
     "source": "morning_refiner",
     "market_regime": "BEARISH",
-    "gap_prediction_pct": 0.26224333225494,
-    "gap_bias": "Mild Bullish Open",
+    "gap_prediction_pct": 0.8099763591268397,
+    "gap_bias": "Strong Bullish Open (Gap Up > 0.5%)",
     "min_morning_score": 60.0,
     "earnings_result_today": [
-        "AARTIIND",
-        "BALKRISIND",
-        "BANKBARODA",
-        "BEL",
-        "DELHIVERY",
-        "DIXON",
-        "GAIL",
-        "IOC",
-        "LICHSGFIN",
-        "PHOENIXLTD",
-        "POLICYBZR",
-        "RELIANCE",
-        "SUNPHARMA"
+        "HAPPSTMNDS",
+        "ITC",
+        "MARICO"
     ],
     "symbols": {},
     "rankings": []
