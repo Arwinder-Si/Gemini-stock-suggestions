@@ -1,15 +1,17 @@
 {
-    "trading_date": "2026-11-02",
-    "generated_at": "2026-11-02 16:00:15 IST",
+    "trading_date": "2026-11-03",
+    "generated_at": "2026-11-03 15:57:01 IST",
     "source": "morning_refiner",
     "market_regime": "BEARISH",
-    "gap_prediction_pct": 0.8099763591268397,
-    "gap_bias": "Strong Bullish Open (Gap Up > 0.5%)",
+    "gap_prediction_pct": -0.23085204191931186,
+    "gap_bias": "Mild Bearish Open",
     "min_morning_score": 60.0,
     "earnings_result_today": [
-        "HAPPSTMNDS",
-        "ITC",
-        "MARICO"
+        "BAJAJFINSV",
+        "BATAINDIA",
+        "FLUOROCHEM",
+        "LUPIN",
+        "SBIN"
     ],
     "symbols": {},
     "rankings": []
