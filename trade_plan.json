@@ -1,6 +1,9 @@
 {
-    "trading_date": "2026-11-03",
-    "generated_at": "2026-11-03 01:56:28 IST",
+    "trading_date": "2026-11-04",
+    "generated_at": "2026-11-03 23:23:40 IST",
     "universe": "large",
-    "symbols": {}
+    "symbols": {
+        "BOSCHLTD": "2181",
+        "AFFLE": "11343"
+    }
 }
