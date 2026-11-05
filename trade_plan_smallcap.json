@@ -1,6 +1,10 @@
 {
-    "trading_date": "2026-11-05",
-    "generated_at": "2026-11-04 23:31:40 IST",
+    "trading_date": "2026-11-06",
+    "generated_at": "2026-11-05 23:34:25 IST",
     "universe": "small",
-    "symbols": {}
+    "symbols": {
+        "MOTILALOFS": "14947",
+        "NYKAA": "6545",
+        "BSE": "19585"
+    }
 }

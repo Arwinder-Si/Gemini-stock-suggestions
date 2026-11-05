@@ -1,8 +1,12 @@
 {
-    "trading_date": "2026-11-05",
-    "generated_at": "2026-11-04 23:31:36 IST",
+    "trading_date": "2026-11-06",
+    "generated_at": "2026-11-05 23:34:20 IST",
     "universe": "large",
     "symbols": {
-        "MUTHOOTFIN": "23650"
+        "NHPC": "17400",
+        "AUROPHARMA": "275",
+        "NBCC": "31415",
+        "SONACOMS": "4684",
+        "MOTHERSON": "4204"
     }
 }
