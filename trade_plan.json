@@ -1,12 +1,12 @@
 {
-    "trading_date": "2026-11-06",
-    "generated_at": "2026-11-05 23:34:20 IST",
+    "trading_date": "2026-11-07",
+    "generated_at": "2026-11-06 23:02:32 IST",
     "universe": "large",
     "symbols": {
+        "GLENMARK": "7406",
         "NHPC": "17400",
         "AUROPHARMA": "275",
-        "NBCC": "31415",
-        "SONACOMS": "4684",
-        "MOTHERSON": "4204"
+        "BIOCON": "11373",
+        "TITAN": "3506"
     }
 }
