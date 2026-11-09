@@ -1,8 +1,9 @@
 {
-    "trading_date": "2026-11-07",
-    "generated_at": "2026-11-06 23:02:36 IST",
+    "trading_date": "2026-11-10",
+    "generated_at": "2026-11-10 02:18:02 IST",
     "universe": "small",
     "symbols": {
-        "MOTILALOFS": "14947"
+        "HUDCO": "20825",
+        "COCHINSHIP": "21508"
     }
 }
