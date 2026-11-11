@@ -1,12 +1,12 @@
 {
-    "trading_date": "2026-11-11",
-    "generated_at": "2026-11-10 23:23:53 IST",
+    "trading_date": "2026-11-12",
+    "generated_at": "2026-11-11 23:26:39 IST",
     "universe": "large",
     "symbols": {
         "HUDCO": "20825",
-        "DIVISLAB": "10940",
-        "COCHINSHIP": "21508",
-        "EMAMILTD": "13517",
-        "VOLTAS": "3718"
+        "FLUOROCHEM": "13750",
+        "MRF": "2277",
+        "GRSE": "5475",
+        "BANKBARODA": "4668"
     }
 }
