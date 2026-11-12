@@ -1,10 +1,8 @@
 {
-    "trading_date": "2026-11-12",
-    "generated_at": "2026-11-11 23:26:43 IST",
+    "trading_date": "2026-11-13",
+    "generated_at": "2026-11-12 23:52:48 IST",
     "universe": "small",
     "symbols": {
-        "HUDCO": "20825",
-        "NAM-INDIA": "357",
         "MOTILALOFS": "14947"
     }
 }

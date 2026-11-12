@@ -1,12 +1,10 @@
 {
-    "trading_date": "2026-11-12",
-    "generated_at": "2026-11-11 23:26:39 IST",
+    "trading_date": "2026-11-13",
+    "generated_at": "2026-11-12 23:52:44 IST",
     "universe": "large",
     "symbols": {
-        "HUDCO": "20825",
-        "FLUOROCHEM": "13750",
-        "MRF": "2277",
-        "GRSE": "5475",
-        "BANKBARODA": "4668"
+        "HDFCLIFE": "467",
+        "MUTHOOTFIN": "23650",
+        "PAYTM": "6705"
     }
 }
