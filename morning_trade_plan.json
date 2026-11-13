@@ -1,18 +1,16 @@
 {
-    "trading_date": "2026-11-12",
-    "generated_at": "2026-11-12 16:07:03 IST",
+    "trading_date": "2026-11-13",
+    "generated_at": "2026-11-13 15:59:49 IST",
     "source": "morning_refiner",
     "market_regime": "BULLISH",
-    "gap_prediction_pct": 0.31403437370320714,
-    "gap_bias": "Mild Bullish Open",
+    "gap_prediction_pct": -0.547715609319779,
+    "gap_bias": "Strong Bearish Open (Gap Down < -0.5%)",
     "min_morning_score": 60.0,
     "earnings_result_today": [
-        "ALKEM",
-        "BDL",
-        "HAL",
-        "IRCTC",
-        "MANAPPURAM",
-        "PAGEIND"
+        "ABB",
+        "EICHERMOT",
+        "GRASIM",
+        "NATCOPHARM"
     ],
     "symbols": {},
     "rankings": []
