@@ -1,10 +1,8 @@
 {
-    "trading_date": "2026-11-13",
-    "generated_at": "2026-11-12 23:52:44 IST",
+    "trading_date": "2026-11-14",
+    "generated_at": "2026-11-13 23:17:29 IST",
     "universe": "large",
     "symbols": {
-        "HDFCLIFE": "467",
-        "MUTHOOTFIN": "23650",
-        "PAYTM": "6705"
+        "LICHSGFIN": "1997"
     }
 }
