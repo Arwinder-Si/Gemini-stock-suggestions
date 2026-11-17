@@ -1,10 +1,9 @@
 {
-    "trading_date": "2026-11-17",
-    "generated_at": "2026-11-17 02:02:11 IST",
+    "trading_date": "2026-11-18",
+    "generated_at": "2026-11-18 00:43:24 IST",
     "universe": "large",
     "symbols": {
-        "LICHSGFIN": "1997",
-        "ABB": "13",
-        "EICHERMOT": "910"
+        "ASHOKLEY": "212",
+        "LICHSGFIN": "1997"
     }
 }
