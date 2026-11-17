@@ -1,14 +1,12 @@
 {
-    "trading_date": "2026-11-16",
-    "generated_at": "2026-11-16 16:05:30 IST",
+    "trading_date": "2026-11-17",
+    "generated_at": "2026-11-17 16:57:45 IST",
     "source": "morning_refiner",
     "market_regime": "BULLISH",
-    "gap_prediction_pct": -0.10020921357309942,
-    "gap_bias": "Mild Bearish Open",
+    "gap_prediction_pct": -1.2471850269203437,
+    "gap_bias": "Strong Bearish Open (Gap Down < -0.5%)",
     "min_morning_score": 60.0,
-    "earnings_result_today": [
-        "ASHOKLEY"
-    ],
+    "earnings_result_today": [],
     "symbols": {},
     "rankings": []
 }
