@@ -1,8 +1,12 @@
 {
-    "trading_date": "2026-11-19",
-    "generated_at": "2026-11-19 00:24:07 IST",
+    "trading_date": "2026-11-20",
+    "generated_at": "2026-11-20 00:31:49 IST",
     "universe": "large",
     "symbols": {
-        "SBIN": "3045"
+        "PAYTM": "6705",
+        "M&M": "2031",
+        "IDFCFIRSTB": "11184",
+        "INDIGO": "11195",
+        "AXISBANK": "5900"
     }
 }

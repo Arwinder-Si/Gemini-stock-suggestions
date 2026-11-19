@@ -1,8 +1,10 @@
 {
-    "trading_date": "2026-11-19",
-    "generated_at": "2026-11-19 00:24:10 IST",
+    "trading_date": "2026-11-20",
+    "generated_at": "2026-11-20 00:31:53 IST",
     "universe": "small",
     "symbols": {
-        "IREDA": "20261"
+        "IREDA": "20261",
+        "PAYTM": "6705",
+        "KARURVYSYA": "1838"
     }
 }
