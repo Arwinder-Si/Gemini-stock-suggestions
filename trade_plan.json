@@ -1,12 +1,12 @@
 {
-    "trading_date": "2026-11-20",
-    "generated_at": "2026-11-20 00:31:49 IST",
+    "trading_date": "2026-11-21",
+    "generated_at": "2026-11-21 00:09:50 IST",
     "universe": "large",
     "symbols": {
-        "PAYTM": "6705",
-        "M&M": "2031",
-        "IDFCFIRSTB": "11184",
-        "INDIGO": "11195",
-        "AXISBANK": "5900"
+        "HAVELLS": "9819",
+        "TRENT": "1964",
+        "MARUTI": "10999",
+        "AXISBANK": "5900",
+        "HDFCLIFE": "467"
     }
 }

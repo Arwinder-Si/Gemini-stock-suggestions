@@ -1,10 +1,10 @@
 {
-    "trading_date": "2026-11-20",
-    "generated_at": "2026-11-20 00:31:53 IST",
+    "trading_date": "2026-11-21",
+    "generated_at": "2026-11-21 00:09:53 IST",
     "universe": "small",
     "symbols": {
-        "IREDA": "20261",
-        "PAYTM": "6705",
-        "KARURVYSYA": "1838"
+        "NUVOCO": "5426",
+        "COFORGE": "11543",
+        "IREDA": "20261"
     }
 }
