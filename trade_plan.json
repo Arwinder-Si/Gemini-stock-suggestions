@@ -1,12 +1,12 @@
 {
-    "trading_date": "2026-11-21",
-    "generated_at": "2026-11-21 00:09:50 IST",
+    "trading_date": "2026-11-24",
+    "generated_at": "2026-11-24 03:35:19 IST",
     "universe": "large",
     "symbols": {
-        "HAVELLS": "9819",
-        "TRENT": "1964",
-        "MARUTI": "10999",
-        "AXISBANK": "5900",
-        "HDFCLIFE": "467"
+        "DABUR": "772",
+        "PERSISTENT": "18365",
+        "ADANIPOWER": "17388",
+        "FEDERALBNK": "1023",
+        "MARUTI": "10999"
     }
 }
