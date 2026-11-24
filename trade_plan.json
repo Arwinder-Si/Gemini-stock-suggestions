@@ -1,12 +1,12 @@
 {
-    "trading_date": "2026-11-24",
-    "generated_at": "2026-11-24 03:35:19 IST",
+    "trading_date": "2026-11-25",
+    "generated_at": "2026-11-25 02:12:21 IST",
     "universe": "large",
     "symbols": {
         "DABUR": "772",
         "PERSISTENT": "18365",
-        "ADANIPOWER": "17388",
-        "FEDERALBNK": "1023",
-        "MARUTI": "10999"
+        "FLUOROCHEM": "13750",
+        "COFORGE": "11543",
+        "FEDERALBNK": "1023"
     }
 }

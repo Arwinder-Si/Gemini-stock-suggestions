@@ -1,9 +1,9 @@
 {
-    "trading_date": "2026-11-24",
-    "generated_at": "2026-11-24 03:35:23 IST",
+    "trading_date": "2026-11-25",
+    "generated_at": "2026-11-25 02:12:25 IST",
     "universe": "small",
     "symbols": {
         "PERSISTENT": "18365",
-        "ADANIPOWER": "17388"
+        "COFORGE": "11543"
     }
 }
