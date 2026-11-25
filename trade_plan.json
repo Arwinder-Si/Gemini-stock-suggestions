@@ -1,12 +1,12 @@
 {
-    "trading_date": "2026-11-25",
-    "generated_at": "2026-11-25 02:12:21 IST",
+    "trading_date": "2026-11-26",
+    "generated_at": "2026-11-26 01:29:11 IST",
     "universe": "large",
     "symbols": {
         "DABUR": "772",
-        "PERSISTENT": "18365",
-        "FLUOROCHEM": "13750",
+        "BAJAJFINSV": "16675",
+        "TATACONSUM": "3432",
         "COFORGE": "11543",
-        "FEDERALBNK": "1023"
+        "GODREJCP": "10099"
     }
 }
