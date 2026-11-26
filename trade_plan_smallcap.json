@@ -1,8 +1,6 @@
 {
-    "trading_date": "2026-11-26",
-    "generated_at": "2026-11-26 01:29:15 IST",
+    "trading_date": "2026-11-27",
+    "generated_at": "2026-11-27 01:10:13 IST",
     "universe": "small",
-    "symbols": {
-        "COFORGE": "11543"
-    }
+    "symbols": {}
 }
