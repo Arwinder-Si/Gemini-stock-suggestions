@@ -1,9 +1,12 @@
 {
-    "trading_date": "2026-11-27",
-    "generated_at": "2026-11-27 01:10:09 IST",
+    "trading_date": "2026-11-28",
+    "generated_at": "2026-11-28 01:01:24 IST",
     "universe": "large",
     "symbols": {
-        "BRITANNIA": "547",
-        "TORNTPHARM": "3518"
+        "VOLTAS": "3718",
+        "HCLTECH": "7229",
+        "HINDUNILVR": "1394",
+        "DELHIVERY": "9599",
+        "POLICYBZR": "6656"
     }
 }
