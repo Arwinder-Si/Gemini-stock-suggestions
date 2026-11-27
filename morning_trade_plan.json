@@ -1,27 +1,12 @@
 {
-    "trading_date": "2026-11-26",
-    "generated_at": "2026-11-26 17:21:33 IST",
+    "trading_date": "2026-11-27",
+    "generated_at": "2026-11-27 17:13:38 IST",
     "source": "morning_refiner",
     "market_regime": "BULLISH",
-    "gap_prediction_pct": 1.013739012114711,
+    "gap_prediction_pct": 1.257491565721182,
     "gap_bias": "Strong Bullish Open (Gap Up > 0.5%)",
     "min_morning_score": 60.0,
     "earnings_result_today": [],
-    "symbols": {
-        "DABUR": "772"
-    },
-    "rankings": [
-        {
-            "symbol": "DABUR",
-            "morning_score": 64.0,
-            "screener_score": 90,
-            "sentiment_7d": 0.0,
-            "sector": "FMCG",
-            "vol_ratio": 6.0,
-            "rsi": 64.0,
-            "security_id": "772",
-            "in_evening_plan": true,
-            "earnings_result_today": false
-        }
-    ]
+    "symbols": {},
+    "rankings": []
 }
